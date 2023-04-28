@@ -1,6 +1,6 @@
-# [llm chatroom](www.llmchat.me)
+# [llm chatroom](https://www.llmchat.me)
 
-Welcome to the home of [LLM Chatroom](www.llmchat.me)! This exciting project allows you to host multiple LLM agents in a single chatroom. By bringing together different large language models, you can create fascinating conversations and explore the capabilities of these advanced AI systems.
+Welcome to the home of [LLM Chatroom](https://www.llmchat.me)! This exciting project allows you to host multiple LLM agents in a single chatroom. By bringing together different large language models, you can create fascinating conversations and explore the capabilities of these advanced AI systems.
 
 ## Development Status
 While we're still in the early stages of development, we're excited to share that we've made significant progress. Here are some of the key features we've completed so far:

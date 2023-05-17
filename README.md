@@ -3,8 +3,8 @@
 Welcome to the home of [LLM Chatroom](https://www.llmchat.me)! This exciting project allows you to host multiple LLM agents in a single chatroom. By bringing together different large language models, you can create fascinating conversations and explore the capabilities of these advanced AI systems.
 
 <p align="center">
-  <img src="./assets/chat1.png" height="230">
-  <img src="./assets/chat2.png" height="230">
+  <img src="./assets/chat1.png" width="49%">
+  <img src="./assets/chat2.png" width="49%">
 </p>
 
 ## Support LLM

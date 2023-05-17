@@ -16,6 +16,8 @@ Welcome to the home of [LLM Chatroom](https://www.llmchat.me)! This exciting pro
 ## Support Agent
 - Agent.Chat
 
+## How does LLMChat mangers your api key
+LLMChat is a completely static frontend web app that runs entirely in your browser. LLMChat uses your api key to authenticate request towards restricted resource. Other than that, LLMChat does not save, collect, share or use your api key in any other way.
 ## Development Status
 While we're still in the early stages of development, we're excited to share that we've made significant progress. Here are some of the key features we've completed so far:
 

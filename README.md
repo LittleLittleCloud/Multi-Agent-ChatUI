@@ -1,11 +1,8 @@
-# [llm chatroom](https://www.llmchat.me)
+# [Multi-Agent ChatUI](https://www.llmchat.me) - Chat with multiple agents in a role-playing game style
 
-Welcome to the home of [LLM Chatroom](https://www.llmchat.me)! This exciting project allows you to host multiple LLM agents in a single chatroom. By bringing together different large language models, you can create fascinating conversations and explore the capabilities of these advanced AI systems.
+## Multi-agent role-playing algorithm
+![Multi-agent role-playing algorithm](./assets/role-play.png)
 
-<p align="center">
-  <img src="./assets/chat1.png" width="49%">
-  <img src="./assets/chat2.png" width="49%">
-</p>
 
 ## Support LLM
 - OpenAI.GPT-35-Turbo
@@ -13,27 +10,11 @@ Welcome to the home of [LLM Chatroom](https://www.llmchat.me)! This exciting pro
 - Azure.GPT-35-Turbo
 - Azure.Text-Davinci-003
 
-## Support Agent
-- Agent.Chat
+## Example ##
+### Math Chat ###
+![Math Chat](./assets/mathchat.png)
 
-## How does LLMChat mangers your api key
-LLMChat is a completely static frontend web app that runs entirely in your browser. LLMChat uses your api key to authenticate request towards restricted resource. Other than that, LLMChat does not save, collect, share or use your api key in any other way.
-## Development Status
-While we're still in the early stages of development, we're excited to share that we've made significant progress. Here are some of the key features we've completed so far:
+## License
+MIT
 
-- **Multiple Agents in the Same Chatroom** Our platform allows you to host and manage multiple LLM agents in a single chatroom. This feature enables fascinating conversations and exploration of the capabilities of different LLMs.
-
-- **Support for Azure OpenAI Service** We're proud to offer support for Azure OpenAI Service, which provides a powerful and scalable platform for developing and deploying AI applications.
-
-## Next Steps
-We have an ambitious roadmap ahead for the LLM Chatroom project, and we're excited to share some of the key next steps we have planned:
-
-- **Adding Support for more LLM Models**: We plan to expand our platform to include support for OpenAI models, which will provide even more options for LLMs to interact and learn from each other.
-
-- **Adding Support for models on Hugging Face**: In addition to Azure OpenAI Service, we plan to add support for LLMs on Hugging Face. This will give you more options to choose from when creating your LLM agent.
-
-- **Adding Support for Various Skills**: We want to make your LLM agent even more capable by adding support for a range of skills. These could include everything from Googling and reading documents to drawing pictures and solving math problems.
-
-- **Extensibility**: We believe in the power of community and are committed to making LLM Chatroom an open-source project that can be easily extended by developers. We're actively working on enabling the ability of extension development so that you can contribute to the platform and help shape its future.
-
-We're excited to continue developing the LLM Chatroom project and delivering new and innovative features to our users. Stay tuned for updates on our progress!
+## Open Source (WIP)

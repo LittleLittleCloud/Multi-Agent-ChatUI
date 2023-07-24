@@ -17,7 +17,28 @@
 ### Math Chat ###
 ![Math Chat](./assets/mathchat.png)
 
+## Run locally ##
+### Prerequisites
+- Node.js
+- NPM
+
+### Clone
+```bash
+git clone https://github.com/LittleLittleCloud/Multi-agent-ChatUI.git
+```
+### Install dependencies
+```bash
+cd ./src
+npm install
+```
+
+### Build && Run
+```bash
+npm run build
+npm run start
+```
+
 ## License
-MIT
+[MIT](./LICENSE.txt)
 
 ## Open Source (WIP)

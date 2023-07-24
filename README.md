@@ -11,6 +11,9 @@
 - Azure.Text-Davinci-003
 
 ## Example ##
+### Note
+- All agents are powered by OpenAI GPT3.5 turbo.
+- Credit on my cat, PanPan, for contributing his profile picture as agent avatar on a 100% voluntary basis.
 ### Math Chat ###
 ![Math Chat](./assets/mathchat.png)
 

@@ -40,5 +40,3 @@ npm run start
 
 ## License
 [MIT](./LICENSE.txt)
-
-## Open Source (WIP)

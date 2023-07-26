@@ -312,7 +312,7 @@ export const SmallNumberSetting = (props: {name: string, toolTip?: string, value
 
 export const SelectableListItem = (props: ListItemProps & {selected: boolean}) => {
     return (
-        <CentralBox
+        <Box
             sx={{
                 margin: '0.5rem',
                 padding: '0rem',
@@ -326,9 +326,8 @@ export const SelectableListItem = (props: ListItemProps & {selected: boolean}) =
               padding: '0rem',
               margin: '0rem',
               borderRadius: '1rem',
-            }}
-        />
-            </CentralBox>
+            }}/>
+        </Box>
     )
 }
 
@@ -598,23 +597,21 @@ export const TinyAvatar = styled(SmallAvatar)<AvatarProps & {avatarKey: string}>
 
 export const Label = styled(Typography)(({theme}) => ({
     textTransform: 'none',
-    overflow: 'auto',
-    overflowWrap: 'break-word',
 }));
 
 export const LargeLabel = styled(Label)(({theme}) => ({
-    fontSize: '1.5rem',
+    fontSize: '1.2rem',
     lineHeight: '2rem',
 }));
 
 export const SmallLabel = styled(Label)(({theme}) => ({
-    fontSize: '1rem',
+    fontSize: '0.8rem',
     lineHeight: '1.5rem',
 }));
 
 export const TinyLabel = styled(Label)(({theme}) => ({
-    fontSize: '0.8rem',
-    lineHeight: '1.2rem',
+    fontSize: '0.7em',
+    lineHeight: '1rem',
 }));
 
 export const SmallTextField = styled(TextField)<BaseTextFieldProps>(({theme}) => ({
@@ -643,6 +640,13 @@ export const SmallClickableLabel = styled(SmallLabel)(({theme}) => ({
     }
 }));
 
+export const LargeClickableLabel = styled(LargeLabel)(({theme}) => ({
+    cursor: 'pointer',
+    '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+    }
+}));
+
 export const TinyClickableLabel = styled(TinyLabel)(({theme}) => ({
     cursor: 'pointer',
     '&:hover': {
@@ -656,6 +660,9 @@ export const SmallTextButton = styled(Button)(({theme}) => ({
     textTransform: 'none',
     fontSize: '1rem',
     lineHeight: '1.5rem',
+    '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+    }
 }));
 
 export const TinyTextButton = styled(Button)(({theme}) => ({
@@ -666,4 +673,7 @@ export const TinyTextButton = styled(Button)(({theme}) => ({
     textTransform: 'none',
     fontSize: '0.8rem',
     lineHeight: '1.2rem',
+    '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+    }
 }));

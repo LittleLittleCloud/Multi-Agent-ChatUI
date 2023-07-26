@@ -71,7 +71,7 @@ export const ChatInput: FC<Props> = ({
       return;
     }
     var now = Date.now();
-    onSend({ from: 'Avatar', content, type: 'message.markdown', timestamp: now });
+    onSend({ from: 'Human', content, type: 'message.markdown', timestamp: now });
     setContent('');
 
     if (window.innerWidth < 640 && textareaRef && textareaRef.current) {
@@ -262,15 +262,11 @@ export const ChatInput: FC<Props> = ({
           onDragOver={dragEnterHandler}
           onDragLeave={dragLeaveHandler}
           sx={{
-            display: 'flex',
-            width: '100%',
-            height: '100%',
             borderRadius: '1rem',
           }}>
           <Stack
             direction="column"
-            width="100%"
-            height="100%"
+            width="1"
             spacing={0.5}>
           {
             isDragOver &&
@@ -285,7 +281,6 @@ export const ChatInput: FC<Props> = ({
             !preview && 
             <TextField
             sx = {{
-              flexGrow: 1,
               '& .MuiOutlinedInput-root': {
                 borderRadius: '0.5rem',
                 fieldset: {
@@ -306,8 +301,6 @@ export const ChatInput: FC<Props> = ({
             preview &&
             <Box
               sx={{
-                width: '100%',
-                height: '100%',
                 borderRadius: '0.5rem',
                 border: '1px solid',
                 borderColor: 'divider',
@@ -321,8 +314,7 @@ export const ChatInput: FC<Props> = ({
           }
             <Stack
               direction="row"
-              spacing={1}
-              width="100%">
+              spacing={1}>
               <ToggleButtonGroup
                 size='small'
                 sx={{

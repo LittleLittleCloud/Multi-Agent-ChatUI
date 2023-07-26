@@ -8,7 +8,7 @@ import { CodeBlock } from '../Markdown/CodeBlock';
 import { MemoizedReactMarkdown } from '../Markdown/MemoizedReactMarkdown';
 import { CopyButton } from './CopyButton';
 import { Avatar, Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
-import { SmallAvatar, SmallLabel, TinyLabel } from '../Global/EditableSavableTextField';
+import { SmallAvatar, SmallLabel, TinyAvatar, TinyLabel } from '../Global/EditableSavableTextField';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -71,7 +71,6 @@ export const ChatMessage: FC<Props> = memo(
     };
 
     return (
-        <Box>
           <Stack
             direction={ isUser ? "row-reverse" : "row"}
             spacing={2}
@@ -83,15 +82,10 @@ export const ChatMessage: FC<Props> = memo(
               },
             }}>
             {isUser ? 
-              <Avatar
-                sx={{
-                  width: '3rem',
-                  height: '3rem',
-                }}>You</Avatar> :
-              <SmallAvatar avatarKey={agent?.avatar!}/>}
+              <TinyAvatar avatarKey={"You"} /> :
+              <TinyAvatar avatarKey={agent?.avatar!}/>}
             <Box
               sx={{
-                display: 'flex',
                 backgroundColor: 'background.secondary',
                 borderRadius: 2,
                 maxWidth: '80%',
@@ -119,15 +113,15 @@ export const ChatMessage: FC<Props> = memo(
                 message.timestamp &&
                 <TinyLabel color='text.secondary'>{new Date(message.timestamp).toLocaleString()}</TinyLabel>
               }
-              <Stack
-                direction="row"
-                spacing={1}
-                className='toolBar'
-                sx={{
-                  justifyContent: 'flex-end',
-                  flexGrow: 1,
-                  visibility: 'hidden',
-                }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  className='toolBar'
+                  sx={{
+                    justifyContent: 'flex-end',
+                    flexGrow: 1,
+                    visibility: 'hidden',
+                  }}>
                   {isUser &&
                   <Tooltip
                     title='resend this message'>
@@ -153,13 +147,17 @@ export const ChatMessage: FC<Props> = memo(
                         }} />
                     </IconButton>
                   </Tooltip>
+                </Stack>
               </Stack>
-              </Stack>
-              <MessageElement message={message} onchange={(message: IMessage) => {}} />
+              <Box
+                sx={{
+                  overflow: 'scroll',
+                }}>
+                <MessageElement message={message} onchange={(message: IMessage) => {}} />
+              </Box>
               </Stack>
             </Box>
           </Stack>
-        </Box>
     );
   });
 ChatMessage.displayName = 'ChatMessage';

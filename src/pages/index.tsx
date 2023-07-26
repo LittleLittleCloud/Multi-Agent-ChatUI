@@ -8,6 +8,7 @@ import { ErrorMessage } from '@/types/error';
 import { Folder, FolderType } from '@/types/folder';
 import { OpenAIModel, OpenAIModelID, OpenAIModels } from '@/types/openai';
 import { Prompt } from '@/types/prompt';
+import CropFreeIcon from '@mui/icons-material/CropFree';
 import {
   cleanConversationHistory,
   cleanSelectedConversation,
@@ -21,7 +22,7 @@ import {
 import { saveFolders } from '@/utils/app/folders';
 import { exportData, importData } from '@/utils/app/importExport';
 import { savePrompts } from '@/utils/app/prompts';
-import { AppBar, Button, Toolbar, Typography, Box, createTheme, Divider, Stack, Tooltip, IconButton, Avatar, Menu, MenuItem, Chip, CssBaseline, FormControlLabel, Switch } from '@mui/material';
+import { AppBar, Button, Toolbar, Typography, Box, createTheme, Divider, Stack, Tooltip, IconButton, Avatar, Menu, MenuItem, Chip, CssBaseline, FormControlLabel, Switch, Fab } from '@mui/material';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
 import { GetServerSideProps, GetStaticProps } from 'next';
 import { useTranslation } from 'next-i18next';
@@ -45,7 +46,9 @@ import { IAgent } from '@/types/agent';
 import { agentReducer } from '@/utils/app/agentReducer';
 import getConfig from 'next/config';
 import { storageReducer } from '@/utils/app/storageReducer';
-import { Label, LargeLabel, SmallLabel } from '@/components/Global/EditableSavableTextField';
+import { Label, LargeClickableLabel, LargeLabel, SmallClickableLabel, SmallLabel, SmallTextButton } from '@/components/Global/EditableSavableTextField';
+import html2canvas from 'html2canvas';
+import { Logger } from '@/utils/logger';
 
 const { publicRuntimeConfig } = getConfig();
 const Home: React.FC<IStorage> = () => {
@@ -65,21 +68,7 @@ const Home: React.FC<IStorage> = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isInit, setIsInit] = useState<boolean>(false);
-  const [messageIsStreaming, setMessageIsStreaming] = useState<boolean>(false);
-
-
-  const [folders, setFolders] = useState<Folder[]>([]);
-
-  const [currentMessage, setCurrentMessage] = useState<Message>();
-
-  const [showSidebar, setShowSidebar] = useState<boolean>(true);
-
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [showPromptbar, setShowPromptbar] = useState<boolean>(true);
-
   // REFS ----------------------------------------------
-
-  const stopConversationRef = useRef<boolean>(false);
   // FETCH RESPONSE ----------------------------------------------
 
   // First loading
@@ -131,8 +120,8 @@ const Home: React.FC<IStorage> = () => {
     }
   }, [isSaving]);
 
+
   const tabs = ['Chat', 'Agent']
-  const settings = ['Import', 'Export'];
   const [selectedTab, setSelectedTab] = useState(tabs[0]);
   const darkTheme = createTheme({
     palette: {
@@ -165,15 +154,14 @@ const Home: React.FC<IStorage> = () => {
       <Box
         sx={{
           display: 'flex',
-          flexDirection: "column",
-          width: "100%",
+          flexDirection: 'column',
+          width: "100vw",
           height: "100vh"}}>
-          <AppBar
-            position='static'
+          <Box
             sx={{
-              flexGrow: 1,
+              backgroundColor: 'info.main',
             }}>
-          <Toolbar variant="regular">
+            <Toolbar variant="regular">
             <Stack
               direction="row"
               spacing={2}
@@ -189,8 +177,13 @@ const Home: React.FC<IStorage> = () => {
                 {`${publicRuntimeConfig.version}`}
               </SmallLabel>
             </Stack>
-            <Stack direction="row" spacing={2}>
-              {hasChange && <Button variant='outlined' onClick={() => setIsSaving(true)}>save</Button>}
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{
+                alignItems: "center",
+              }}>
+              {hasChange && <SmallClickableLabel onClick={() => setIsSaving(true)}>Save</SmallClickableLabel>}
               <FormControlLabel
                 value="start"
                 control={
@@ -209,12 +202,11 @@ const Home: React.FC<IStorage> = () => {
               {
                 tabs.map((tab, i) => {
                   return (
-                    <Button
-                      key={i}
-                      sx={{ color: '#fff' }}
-                      onClick={() => setSelectedTab(tab)}>
-                      <SmallLabel>{tab}</SmallLabel>
-                    </Button>
+                    <SmallClickableLabel
+                      key = {i}
+                      onClick = {() => setSelectedTab(tab)}>
+                      {tab}
+                    </SmallClickableLabel>
                   )
                 })
               }
@@ -241,8 +233,7 @@ const Home: React.FC<IStorage> = () => {
                     horizontal: 'right',
                   }}
                   open={isMenuOpen}
-                  onClose={() => setIsMenuOpen(false)}
-                  >
+                  onClose={() => setIsMenuOpen(false)}>
                   <MenuItem key="Export" onClick={handleExportSettings}>
                     <Button component="label">Export</Button>
                   </MenuItem>
@@ -261,18 +252,20 @@ const Home: React.FC<IStorage> = () => {
               </Box>
             </Stack>
             </Toolbar>
-          </AppBar>
+          </Box>
       <Box
         sx={{
-          weight: '100%',
-          height: '92%',
+          width: '100%',
+          flexGrow: 1,
+          overflowY: 'scroll',
         }}>
-        {selectedTab == 'Chat' && 
+        {selectedTab == 'Chat' &&
+        <>
           <Chat
             groups={availableGroups}
             agents={availableAgents}
-            storageDispatcher={storageDispatcher}
-          />
+            storageDispatcher={storageDispatcher}/>
+        </>
         }
         {selectedTab == 'Agent' && (
           <AgentPage

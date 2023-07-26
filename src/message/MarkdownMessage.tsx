@@ -1,6 +1,6 @@
 import { SmallLabel, TinyClickableLabel, TinyLabel } from "@/components/Global/EditableSavableTextField";
 import { MemoizedReactMarkdown } from "@/components/Markdown/MemoizedReactMarkdown";
-import { Stack, Divider } from "@mui/material";
+import { Stack, Divider, Box } from "@mui/material";
 import React from "react";
 import { IMessage } from "./type";
 

@@ -1,4 +1,4 @@
-import { IAgent } from "@/types/agent";
+import { IAgent } from "@/agent/type";
 import { IGroup } from "@/types/group";
 import { IStorage } from "@/types/storage";
 

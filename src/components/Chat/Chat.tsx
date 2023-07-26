@@ -16,6 +16,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { renderToStaticMarkup } from "react-dom/server"
 import { Spinner, ThreeDotBouncingLoader } from '../Global/Spinner';
 import { ChatInput } from './ChatInput';
 import { ChatLoader } from './ChatLoader';
@@ -23,7 +24,7 @@ import { ChatMessage } from './ChatMessage';
 import { ErrorMessageDiv } from './ErrorMessageDiv';
 import { ModelSelect } from './ModelSelect';
 import { SystemPrompt } from './SystemPrompt';
-import { Alert, Avatar, Box, Button, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, IconButton, List, ListItem, ListItemButton, ListItemAvatar, ListItemText, Menu, MenuItem, Paper, Stack, Typography, AvatarGroup, Fab, Tooltip } from '@mui/material';
+import { Alert, Avatar, Box, Button, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, IconButton, List, ListItem, ListItemButton, ListItemAvatar, ListItemText, Menu, MenuItem, Paper, Stack, Typography, AvatarGroup, Fab, Tooltip, Modal, ThemeProvider, createTheme, Grid } from '@mui/material';
 import { AgentExecutor } from 'langchain/agents';
 import { IRecord } from '@/types/storage';
 import { CentralBox, EditableSavableTextField, EditableSelectField, LargeLabel, SelectableListItem, SmallAvatar, SmallLabel, SmallMultipleSelectField, SmallSelectField, SmallTextButton, SmallTextField, TinyAvatar } from '../Global/EditableSavableTextField';
@@ -40,6 +41,9 @@ import { AgentProvider } from '@/agent/agentProvider';
 import { IMessage, IsUserMessage } from '@/message/type';
 import { MultiAgentGroup } from '@/chat/group';
 import { Logger } from '@/utils/logger';
+import { Conversation } from './Conversation';
+import html2canvas from 'html2canvas';
+import { VariableModal } from './VariableModal';
 
 const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroup, agents: IAgent[], onSaved: (group: IGroup) => void, onCancel: () => void}> = ({open, group, agents, onSaved, onCancel}) => {
   const [groupName, setGroupName] = useState(group?.name);
@@ -142,6 +146,7 @@ const GroupPanel: FC<{groups: IGroup[], agents: IAgent[], onGroupSelected: (grou
     <Box
       sx={{
         width: '100%',
+        height: '100%',
       }}>
     <DeleteConfirmationDialog
       open={groupToDelete != null}
@@ -173,18 +178,15 @@ const GroupPanel: FC<{groups: IGroup[], agents: IAgent[], onGroupSelected: (grou
           selected={selectedGroup?.name == group.name}
           key={index}
           onClick={() => handleGroupSelected(group)}>
-          
-          <Stack
-            direction="row"
-            spacing={2}
+          <Box
             sx={{
+              display: 'flex',
               width: '100%',
+              direction: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              overflow: 'scroll'
             }}>
-            <Box
-              sx={{
-                display: 'flex',
-                width: '40%',
-              }}>
               <AvatarGroup
                 spacing="small"
                 max={0}
@@ -192,20 +194,16 @@ const GroupPanel: FC<{groups: IGroup[], agents: IAgent[], onGroupSelected: (grou
                 {group.agents.map((agentId, index) => (
                   <TinyAvatar key={index} avatarKey={agents[index].avatar} />
                 ))}
-              </AvatarGroup>
-            </Box>
+                </AvatarGroup>
+            
             <Box
               sx={{
+                width: '60%',
+                justifyContent: 'space-between',
                 display: 'flex',
                 alignItems: 'center',
-                flexGrow: 1,
               }}>
-              <SmallLabel>{group.name}</SmallLabel>
-            </Box>
-            <CentralBox
-                  sx={{
-                    width: '10%'
-                  }}>
+              <SmallLabel textOverflow="clip">{group.name}</SmallLabel>
             <IconButton
                 onClick={(e) =>
                 {
@@ -215,8 +213,8 @@ const GroupPanel: FC<{groups: IGroup[], agents: IAgent[], onGroupSelected: (grou
                 className='hover-button' >
                 <MoreVertIcon />
             </IconButton>
-            </CentralBox>
-          </Stack>
+            </Box>
+          </Box>
         </SelectableListItem>
       ))}
     </List>
@@ -239,8 +237,8 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
     // const [availableGroups, setAvailableGroups] = useState<IGroup[]>(groups);
     const [openCreateGroupDialog, setOpenCreateGroupDialog] = useState<boolean>(false);
     const [respondingAgentAlias, setRespondingAgentAlias] = useState<string|undefined>(undefined);
-    const screenshotRef = useRef<HTMLDivElement>(null)
-
+    const [conversationOverflowY, setConversationOverflowY] = useState<"visible" | "scroll">("scroll");
+    const chatRef = useRef(null);
     useEffect(() => {
       setCurrentConversation(currentGroup?.conversation);
     }, [currentGroup]);
@@ -310,13 +308,32 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
       setCurrentConversation(group.conversation);
     };
 
-    const onDeleteMessage = (index: number) => {
+    const onHandleScreenshot = () => {
+
+      if(chatRef.current){
+        // from top to down
+        window.scrollTo(0, 0);
+        setConversationOverflowY("visible");
+        html2canvas(chatRef.current, {
+          scrollY: -window.scrollY,
+        }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = 'screenshot.png';
+          link.href = canvas.toDataURL();
+          link.click();
+          setConversationOverflowY("scroll");
+        }
+        );
+      }
+    }
+
+    const onDeleteMessage = (message: IMessage, index: number) => {
       currentConversation!.splice(index, 1);
       setCurrentConversation(currentConversation!);
       storageDispatcher({type: 'updateGroup', payload: {...currentGroup!, conversation: currentConversation!}})
     }
 
-    const onResendMessage = async (index: number) => {
+    const onResendMessage = async (message: IMessage, index: number) => {
       var resendMessage = currentConversation![index];
       currentConversation!.splice(index, 1);
       setCurrentConversation(currentConversation!);
@@ -324,16 +341,9 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
       await newMessageHandler(resendMessage, currentConversation!);
     }
 
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          width: "100%",
-          height: "100%",
-          backgroundColor: "background.default",
-        }}>
-        {currentConversation == undefined && groups?.length == 0 &&
-            <CentralBox
+    if (currentConversation == undefined && groups?.length == 0){
+      return (
+        <CentralBox
               sx={{
                 width: "100%",
                 height: "100%",
@@ -361,108 +371,110 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
                 </>
                 }
             </CentralBox>
-          }
+      )
+    }
+    return (
+      <Grid
+        container
+        sx={{
+          height: "100%",
+          width: "100%",
+          backgroundColor: "background.default",
+        }}>
         {groups?.length > 0 &&
-          <>
-          <Box
-          sx={{
-            flexDirection: "column",
-            display: "flex",
-            width: "20%",
-            height: "100%",
-          }}>
-          <Box
+          <Grid
+            item
+            xs={2.5}
             sx={{
-              flexGrow: 1,
+              height: "100%",
+              flexDirection: "column",
+              display: "flex",
+              borderRight: "1px solid",
+              borderColor: "divider",
             }}>
-          <GroupPanel
-            groups={groups}
-            agents={agents}
-            onGroupSelected={onHandleSelectGroup}
-            storageDispatcher={storageDispatcher}/>
-            </Box>
             <Box
               sx={{
-                height: "10%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}>
-              <Button onClick={() => setOpenCreateGroupDialog(true)}>Create Group</Button>
-            </Box>
-          </Box>
-          <Divider orientation="vertical" flexItem />
-          </>
-        }
-        <Box
-          ref={screenshotRef}
-          sx={{
-            display: "flex",
-            height: "100%",
-            flexGrow: 1,
-            marginLeft: 5,
-            flexDirection: "column",
-          }}>
-          { currentConversation &&
-            <List
-              sx={{
                 flexGrow: 1,
-                height: "100%",
-                overflow: "auto",
               }}>
-
-            {currentConversation.map((message, index) => (
-              <Box
-                key={index}
+              <GroupPanel
+                groups={groups}
+                agents={agents}
+                onGroupSelected={onHandleSelectGroup}
+                storageDispatcher={storageDispatcher}/>
+            </Box>
+            <CentralBox>
+              <Button onClick={() => setOpenCreateGroupDialog(true)}>Create Group</Button>
+            </CentralBox>
+          </Grid>}
+        <Grid
+          item
+          xs={9.5}
+          height={1}
+          sx={{
+            flexDirection: "column",
+            maxHeight: "100%",
+            display: "flex",
+          }}>
+          {currentConversation &&
+            <Box
+              ref={chatRef}
+              sx={{
+                margin:2,
+                flexGrow: 1,
+                backgroundColor: "background.default",
+                overflowY: conversationOverflowY,
+              }}>
+                <Conversation
+                  conversation={currentConversation}
+                  agents={agents}
+                  onResendMessage={onResendMessage}
+                  onDeleteMessage={onDeleteMessage} />
+                
+            </Box>}
+              {/* <Fab
                 sx={{
-                  marginTop: 2,
-                  marginRight: 5,
+                  position: "absolute",
+                  bottom: 128,
+                  right: 32,
                 }}>
-                <ChatMessage
-                  key={index}
-                  message={message}
-                  agent={agents.find(agent => agent.alias === message.from)}
-                  onDeleteMessage={(message) => onDeleteMessage(index)}
-                  onResendMessage={(message) => onResendMessage(index)}
-                  />
-                </Box>
-            ))}
-            <div
-              ref={messagesEndRef} />
-            </List>
-          }
-          {/* <Fab
-            sx={{
-              position: "absolute",
-              bottom: 128,
-              right: 32,
-            }}>
-            <Tooltip
-              title="take screenshot">
-            <IconButton
-              onClick = {getConversationScreenshot}>
-              <CropFreeIcon/>
-            </IconButton>
-            </Tooltip>
-          </Fab> */}
-          {respondingAgentAlias &&
-          <Stack
-            spacing={1}
-            direction="row"
-            sx={{
-              height: "5%",
-            }}>
-            <SmallLabel
-              color='text.secondary'
-              sx = {{
-                fontStyle: "italic",
+                <Tooltip
+                  title="take screenshot">
+                <IconButton
+                 onClick={onHandleScreenshot}>
+                  <CropFreeIcon/>
+                </IconButton>
+                </Tooltip>
+              </Fab> */}
+
+          {currentGroup &&
+            <Box
+              sx={{
+                margin:2,
               }}>
-              {`${respondingAgentAlias} is typing`}
-            </SmallLabel>
-            <ThreeDotBouncingLoader/>
-          </Stack>
-          }
-          
+              {respondingAgentAlias &&
+                <Stack
+                  spacing={1}
+                  direction="row"
+                  sx={{
+                    height: "5%",
+                  }}>
+                  <SmallLabel
+                    color='text.secondary'
+                    sx = {{
+                      fontStyle: "italic",
+                    }}>
+                    {`${respondingAgentAlias} is typing`}
+                  </SmallLabel>
+                  <ThreeDotBouncingLoader/>
+                </Stack>}
+              <ChatInput
+                textareaRef={textareaRef}
+                messageIsStreaming={false}
+                onSend={async (message) => {
+                  await newMessageHandler(message, currentConversation!);
+                }} />
+            </Box>}
+
           {currentGroup && currentGroup.agents.length == 0 && 
           <CentralBox
             sx={{
@@ -472,30 +484,13 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
               <Typography variant="h4">{`No agent available in ${currentGroup.name}, add agent first`}</Typography>
           </CentralBox>
             }
-          
-          {currentGroup &&
-          <Box
-            sx={{
-              maxHeight: "50%",
-              marginBottom: 2,
-              marginRight: 5,
-            }}>
-            <ChatInput
-              textareaRef={textareaRef}
-              messageIsStreaming={false}
-              onSend={async (message) => {
-                await newMessageHandler(message, currentConversation!);
-              }} />
-          </Box>
-          }
-        </Box>
+        </Grid>
         <CreateOrEditGroupDialog
                   open={openCreateGroupDialog}
                   agents={agents}
                   onCancel={() => setOpenCreateGroupDialog(false)}
                   onSaved={onHandleCreateGroup} />
-      </Box>
-      
+      </Grid>
     );
   };
 Chat.displayName = 'Chat';

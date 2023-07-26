@@ -7,6 +7,8 @@ import { useTranslation } from 'next-i18next';
 import { FC, memo, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { CentralBox } from '../Global/EditableSavableTextField';
+import { Box } from '@mui/material';
 
 interface Props {
   language: string;
@@ -58,7 +60,10 @@ export const CodeBlock: FC<Props> = memo(({ language, value }) => {
     URL.revokeObjectURL(url);
   };
   return (
-    <div className="codeblock relative font-sans text-[16px]">
+    <Box
+      sx={{
+        width: 'auto',
+      }}>
       <div className="flex items-center justify-between py-1.5 px-4">
         <span className="text-xs lowercase text-white">{language}</span>
 
@@ -82,7 +87,6 @@ export const CodeBlock: FC<Props> = memo(({ language, value }) => {
           </button>
         </div>
       </div>
-
       <SyntaxHighlighter
         language={language}
         style={oneDark}
@@ -90,7 +94,7 @@ export const CodeBlock: FC<Props> = memo(({ language, value }) => {
       >
         {value}
       </SyntaxHighlighter>
-    </div>
+    </Box>
   );
 });
 CodeBlock.displayName = 'CodeBlock';

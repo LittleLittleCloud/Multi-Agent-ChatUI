@@ -20,6 +20,7 @@
     "@tabler/icons-react": "^2.23.0",
     "@uiw/react-md-editor": "^3.23.3",
     "eventsource-parser": "^0.1.0",
+    "html2canvas": "^1.4.1",
     "i18next": "^22.5.1",
     "inversify": "^6.0.1",
     "jszip": "^3.10.1",

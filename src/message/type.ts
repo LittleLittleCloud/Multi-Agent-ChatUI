@@ -15,5 +15,5 @@ export interface IMessage extends IRecord{
 }
 
 export function IsUserMessage(message: IMessage): boolean{
-  return message.from === "__user" || message.from === "user" || message.from === "Avatar";
+  return message.from === "__user" || message.from === "user" || message.from === "Avatar" || message.from === "Human";
 }

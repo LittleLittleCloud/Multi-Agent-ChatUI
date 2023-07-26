@@ -24,8 +24,7 @@ export const Markdown = (props: ReactMarkdownOptions) => (
                 <CodeBlock
                     language={match[1]}
                     value={String(children).replace(/\n$/, '')}
-                    {...props}
-                />
+                    {...props}/>
                 ) : (
                   <code {...props} className={className}>
                     {children}

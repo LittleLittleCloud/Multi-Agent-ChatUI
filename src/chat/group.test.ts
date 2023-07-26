@@ -46,7 +46,7 @@ test('multi-agent response test', async () => {
 
     var user: IAgent = {
         alias: "Human",
-        description: "a user seeks for help",
+        description: "a user seeks for help, won't respond unless being mentioned",
         avatar: "test",
     } as IAgent;
 
@@ -102,7 +102,7 @@ test('multi-agent computer-real-restate conversation test', async () => {
 
     var user: IAgent = {
         alias: "Human",
-        description: "a user seeks for help",
+        description: "a user seeks for help, won't respond unless being mentioned",
         avatar: "test",
     } as IAgent;
 
@@ -158,14 +158,14 @@ test('python-math-chat test', async () => {
 
     var user: IAgent = {
         alias: "Human",
-        description: "a user seeks for help",
+        description: "a user seeks for help, won't respond unless being mentioned",
         avatar: "test",
     } as IAgent;
 
     var group = new MultiAgentGroup(user, [teacher, student], []);
     var userMessage = {
-        from: student.alias,
-        content: 'hello, I want resolve a math problem: how to resolve 1+2+3+...+100. And I want to use python to resolve it.',
+        from: user.alias,
+        content: 'hello, teacher, teach student on how to resolve 1+2+3+...+100 in python? And report back to me when you are done.',
         type: 'message.markdown',
     } as IMarkdownMessage;
 

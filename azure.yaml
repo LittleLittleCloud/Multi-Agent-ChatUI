@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: chatroom
+services:
+  frontend:
+    project: ./src
+    host: staticwebapp
+    dist: ./build
+    language: ts

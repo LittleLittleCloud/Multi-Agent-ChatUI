@@ -367,7 +367,11 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
                   }}>
                   <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Create a group</Typography>
                 </Button>
-                
+                <CreateOrEditGroupDialog
+                  open={openCreateGroupDialog}
+                  agents={agents}
+                  onCancel={() => setOpenCreateGroupDialog(false)}
+                  onSaved={onHandleCreateGroup} />
                 </>
                 }
             </CentralBox>
@@ -454,10 +458,7 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
               {respondingAgentAlias &&
                 <Stack
                   spacing={1}
-                  direction="row"
-                  sx={{
-                    height: "5%",
-                  }}>
+                  direction="row">
                   <SmallLabel
                     color='text.secondary'
                     sx = {{
@@ -466,13 +467,14 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
                     {`${respondingAgentAlias} is typing`}
                   </SmallLabel>
                   <ThreeDotBouncingLoader/>
+                  <ChatInput
+                    textareaRef={textareaRef}
+                    messageIsStreaming={false}
+                    onSend={async (message) => {
+                      await newMessageHandler(message, currentConversation!);
+                    }} />
                 </Stack>}
-              <ChatInput
-                textareaRef={textareaRef}
-                messageIsStreaming={false}
-                onSend={async (message) => {
-                  await newMessageHandler(message, currentConversation!);
-                }} />
+              
             </Box>}
 
           {currentGroup && currentGroup.agents.length == 0 && 
@@ -485,11 +487,7 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
           </CentralBox>
             }
         </Grid>
-        <CreateOrEditGroupDialog
-                  open={openCreateGroupDialog}
-                  agents={agents}
-                  onCancel={() => setOpenCreateGroupDialog(false)}
-                  onSaved={onHandleCreateGroup} />
+        
       </Grid>
     );
   };

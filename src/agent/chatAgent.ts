@@ -93,15 +93,10 @@ ${this.renderChatHistoryMessages(messages)}
     return prompt;
   }
 
-  async callLLM(txt: string): Promise<string> {
+  async callLLM(messages: BaseChatMessage[]): Promise<BaseChatMessage> {
     if (this.llm instanceof BaseChatModel) {
-      var input = new HumanChatMessage(txt);
-      var output = await this.llm.call([input]);
-      return output.text;
-    }
-    else if (this.llm instanceof BaseLLM) {
-      var llmOutput = await this.llm.call(txt);
-      return llmOutput;
+      var output = await this.llm.call(messages);
+      return output;
     }
 
     throw new Error("llm type not supported");
@@ -113,24 +108,20 @@ ${this.renderChatHistoryMessages(messages)}
     return agentStr;
   }
 
-  async selectNextRole(messages: IMessage[], agents: IAgent[]): Promise<number> {
-    var prompt = `### role information###
-${this.renderRoleInformation(agents)}
-### end of role information ###
+  async selectNextRole(chat_history: IMessage[], agents: IAgent[]): Promise<number> {
+    var systemMessage = new SystemChatMessage(`You are in a role play game. The following roles are available:
+    ${this.renderRoleInformation(agents)}
+    Read the following conversation. Then select the next role to play. Make your response concise.
+    `);
 
-### conversation ###
-${this.renderChatHistoryMessages(messages)}
-### end of conversation ###
+    var chat_messages = chat_history.map((message) => new HumanChatMessage(`[${message.from.toLowerCase()}]:${message.content}`));
 
-You are in a multi-role play game and your task is to continue writing conversation. Carefully pick a role based on context. Put sender's name in square brackets. Explain why you pick this role.
-(e.g: [sender]: // short and precise message)`
-
-    Logger.debug(`prompt: ${prompt}`);
-    var response = await this.callLLM(prompt);
-    Logger.debug(`response from ${this.agent.alias}: ${response}`);
+    var messages = [systemMessage, ...chat_messages];
+    var response = await this.callLLM(messages);
+    Logger.debug(`response from ${this.agent.alias}: ${response.text}`);
     try{
       var candidate_roles = agents.map((agent) => agent.alias.toLowerCase());
-      var selected_role = response.match(/\[(.*?)\]/)![1].toLowerCase();
+      var selected_role = response.text.match(/\[(.*?)\]/)![1].toLowerCase();
       var index = candidate_roles.indexOf(selected_role);
 
       Logger.debug(`response from ${this.agent.alias}: ${selected_role}, index: ${index}`);
@@ -142,16 +133,29 @@ You are in a multi-role play game and your task is to continue writing conversat
     }
   }
 
-  async rolePlay(messages: IMessage[], agents: IAgent[]): Promise<IMessage> {
-    var prompt = this.renderRolePlayPrompt(messages, agents);
-    Logger.debug(`prompt: ${prompt}`);
-    var response = await this.callLLM(prompt);
-    Logger.debug(`response from ${this.agent.alias}: ${response}`);
+  async rolePlay(chat_history: IMessage[], agents: IAgent[]): Promise<IMessage> {
+    var systemMessage = new SystemChatMessage(`You are in a role play game. continue the conversation based on your role.`);
+    var chat_messages = chat_history.map((message) => new HumanChatMessage(`[${message.from}]:${message.content}`));
+    var task_messages = [`your role is ${this.agent.alias}`, `your description is ${this.agent.description}`];
+
+    task_messages.push("return message content only, e.g. how can I help you today")
+    var task_message = new SystemChatMessage(task_messages.join("\n"));
+    var messages = [systemMessage, ...chat_messages, task_message];
+    var response = await this.callLLM(messages);
+    Logger.debug(`response from ${this.agent.alias}: ${response.text}`);
+
+    // if response.text starts with [agent_name], then return the message only
+    // otherwise, return the whole response
+    var content = response.text;
+    if (content.startsWith(`[${this.agent.alias}]:`)){
+      content = content.replace(`[${this.agent.alias}]:`, "").trim();
+    }
 
     return {
       type: 'message.markdown',
       from: this.agent.alias,
-      content: response,
+      content: content,
+      timestamp: Date.now(),
     } as IMarkdownMessage;
   }
 }

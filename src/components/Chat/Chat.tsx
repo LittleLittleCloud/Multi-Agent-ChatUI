@@ -265,8 +265,8 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
       };
       var chat = new MultiAgentGroup(user, currentAgents, [...converstion, message]);
       for(var i = 0; i < round; i++){
-        var rolePlay = await chat.selectNextRoleWithRandomVote();
-        if (rolePlay.alias == chat.user.alias || rolePlay.alias == chat.system.alias){
+        var rolePlay = await chat.selectNextSpeaker();
+        if (rolePlay.alias == chat.user.alias){
           return;
         }
         try{
@@ -385,6 +385,11 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
           width: "100%",
           backgroundColor: "background.default",
         }}>
+        <CreateOrEditGroupDialog
+          open={openCreateGroupDialog}
+          agents={agents}
+          onCancel={() => setOpenCreateGroupDialog(false)}
+          onSaved={onHandleCreateGroup} />
         {groups?.length > 0 &&
           <Grid
             item
@@ -467,13 +472,13 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
                     {`${respondingAgentAlias} is typing`}
                   </SmallLabel>
                   <ThreeDotBouncingLoader/>
-                  <ChatInput
+                </Stack>}
+                <ChatInput
                     textareaRef={textareaRef}
                     messageIsStreaming={false}
                     onSend={async (message) => {
                       await newMessageHandler(message, currentConversation!);
                     }} />
-                </Stack>}
               
             </Box>}
 

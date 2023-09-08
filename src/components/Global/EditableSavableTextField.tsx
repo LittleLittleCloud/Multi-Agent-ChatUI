@@ -570,7 +570,7 @@ export const SmallAvatar = (props: AvatarProps & {avatarKey: string}) => {
             }
         }
         else{
-            setSrc(props.src);
+            setSrc(undefined);
         }
     }, [props.avatarKey]);
 

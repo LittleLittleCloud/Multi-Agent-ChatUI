@@ -71,8 +71,7 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
             } as IMessage,
         ];
 
-        var agentExecutor = new ChatAgentExecutor(agent);
-        var prompt = agentExecutor.renderRolePlayPrompt(history);
+        var prompt = agent.description;
         setPromptPreview(prompt);
     }, [agent]);
 
@@ -121,19 +120,30 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
                   }}
                 onChange={(event, newValue) => updateTabIndex(newValue)}>
                 <Tab
+                    label={<SmallLabel>llm</SmallLabel>}
+                    {...a11yProps(0)} />
+                {/* <Tab
                     label={<SmallLabel>prompt</SmallLabel>}
-                    {...a11yProps(0)}/>
+                    {...a11yProps(1)}/>
                 <Tab
                     label={<SmallLabel>memory</SmallLabel>}
-                    {...a11yProps(1)} />
-                <Tab
-                    label={<SmallLabel>llm</SmallLabel>}
                     {...a11yProps(2)} />
+                
                 <Tab
                     label={<SmallLabel>embedding</SmallLabel>}
-                    {...a11yProps(3)} />
+                    {...a11yProps(3)} /> */}
             </Tabs>
             <TabPanel value={tabIndex} index={0}>
+                <SettingSection
+                        title='llm setting'
+                        toolTip='llm settings'>
+                        <SmallSelectSetting name='selected llm model' options={availableLLMModels} value={selectedLLMModelID} onChange={(value) => setSelectedLLMModelID(value)}/>
+                        {selectedLLMModelID && llm != undefined &&
+                            <LLMSettingPanel model = {llm} onChange={(model) => onAgentConfigChanged({...agent, llm: model})}/>
+                        }
+                    </SettingSection>
+            </TabPanel>
+            {/* <TabPanel value={tabIndex} index={1}>
                 <SettingSection
                     title='prompt setting'
                     toolTip='prompt settings'>
@@ -160,7 +170,7 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
                         value={promptPreview} />
                 </SettingSection>
             </TabPanel>
-            <TabPanel value={tabIndex} index={1}>
+            <TabPanel value={tabIndex} index={2}>
                 <SettingSection
                     title='memory setting'
                     toolTip='memory settings'>
@@ -169,16 +179,6 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
                         <MemorySettingPanel model = {memory} onChange={(model) => onAgentConfigChanged({...agent, memory: model})}/>
                     }
                 </SettingSection>
-            </TabPanel>
-            <TabPanel value={tabIndex} index={2}>
-                <SettingSection
-                        title='llm setting'
-                        toolTip='llm settings'>
-                        <SmallSelectSetting name='selected llm model' options={availableLLMModels} value={selectedLLMModelID} onChange={(value) => setSelectedLLMModelID(value)}/>
-                        {selectedLLMModelID && llm != undefined &&
-                            <LLMSettingPanel model = {llm} onChange={(model) => onAgentConfigChanged({...agent, llm: model})}/>
-                        }
-                    </SettingSection>
             </TabPanel>
             <TabPanel value={tabIndex} index={3}>
                 <SettingSection
@@ -189,7 +189,7 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
                         <EmbeddingSettingPanel model = {embedding} onChange={(model) => onAgentConfigChanged({...agent, embedding: model})}/>
                     }
                 </SettingSection>
-            </TabPanel>
+            </TabPanel> */}
         </Box>
     )
 };

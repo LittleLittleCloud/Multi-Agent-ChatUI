@@ -1,5 +1,5 @@
 import { IChatAgent } from "@/agent/chatAgent";
-import { IGPT35Turbo } from "@/model/openai/GPT"
+import { IGPT } from "@/model/openai/GPT"
 import { MultiAgentGroup } from "./group";
 import { Logger } from "@/utils/logger";
 import { AgentProvider } from "@/agent/agentProvider";
@@ -8,7 +8,7 @@ import { IAgent } from "@/agent/type";
 
 test('multi-agent response test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
-    var llm: IGPT35Turbo = {
+    var llm: IGPT = {
         type: "openai.gpt-35-turbo",
         isChatModel: true,
         model: "gpt-3.5-turbo",
@@ -18,7 +18,7 @@ test('multi-agent response test', async () => {
         temperature: 0.5,
         topP: 1,
         frequencyPenalty: 0,
-    } as IGPT35Turbo;
+    } as IGPT;
 
     var alice: IChatAgent = {
         type: 'agent.chat',
@@ -53,18 +53,18 @@ test('multi-agent response test', async () => {
     var group = new MultiAgentGroup(user, [alice, bob], []);
     var userMessage = {
         from: 'Human',
-        content: 'hello, I want to buy a house',
+        content: 'hello bob, I want to buy a house',
         type: 'message.markdown',
     };
 
     group.pushMessage(userMessage);
-    var nextAgent = await group.selectNextRoleWithMaxVote();
+    var nextAgent = await group.selectNextSpeaker();
     expect(nextAgent.alias).toBe(bob.alias);
 })
 
 test('multi-agent computer-real-restate conversation test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
-    var llm: IGPT35Turbo = {
+    var llm: IGPT = {
         type: "openai.gpt-35-turbo",
         isChatModel: true,
         model: "gpt-3.5-turbo-0613",
@@ -74,7 +74,7 @@ test('multi-agent computer-real-restate conversation test', async () => {
         temperature: 0,
         topP: 1,
         frequencyPenalty: 0,
-    } as IGPT35Turbo;
+    } as IGPT;
 
     var alice: IChatAgent = {
         type: 'agent.chat',
@@ -120,7 +120,7 @@ test('multi-agent computer-real-restate conversation test', async () => {
 
 test('python-math-chat test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
-    var llm: IGPT35Turbo = {
+    var llm: IGPT = {
         type: "openai.gpt-35-turbo",
         isChatModel: true,
         model: "gpt-3.5-turbo-0613",
@@ -130,7 +130,7 @@ test('python-math-chat test', async () => {
         temperature: 0,
         topP: 1,
         frequencyPenalty: 0,
-    } as IGPT35Turbo;
+    } as IGPT;
 
     var teacher: IChatAgent = {
         type: 'agent.chat',
@@ -176,7 +176,7 @@ test('python-math-chat test', async () => {
 
 test('single-agent max-vote test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
-    var llm: IGPT35Turbo = {
+    var llm: IGPT = {
         type: "openai.gpt-35-turbo",
         isChatModel: true,
         model: "gpt-3.5-turbo-0613",
@@ -186,7 +186,7 @@ test('single-agent max-vote test', async () => {
         temperature: 0,
         topP: 1,
         frequencyPenalty: 0,
-    } as IGPT35Turbo;
+    } as IGPT;
 
     var alice: IChatAgent = {
         type: 'agent.chat',

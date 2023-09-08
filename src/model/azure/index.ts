@@ -1,29 +1,14 @@
-import { IGPT35Turbo, ITextDavinci003, TextDavinci003, GPT_35_TURBO, AzureTextEmbeddingsAda002V2, IAzureTextEmbeddingAda002V2 } from "./GPT";
+import { IGPT, GPT, AzureTextEmbeddingsAda002V2, IAzureTextEmbeddingAda002V2 } from "./GPT";
 import { AzureEmbeddingConfig, GPTConfig } from "./ConfigPanel";
 import { EmbeddingProvider, LLMProvider } from "@/model/llmprovider";
 
 // register LLM provider
-LLMProvider.registerProvider<ITextDavinci003>(
-    "azure.text-davinci-003",
-    (model) => new TextDavinci003(model as ITextDavinci003),
-    (model, onConfigChange) => GPTConfig(model, (model) => onConfigChange(model as ITextDavinci003)),
+LLMProvider.registerProvider<IGPT>(
+    "azure.gpt",
+    (model) => new GPT(model as IGPT),
+    (model, onConfigChange) => GPTConfig(model, (model) => onConfigChange(model as IGPT)),
     {
-        type: "azure.text-davinci-003",
-        maxTokens: 64,
-        temperature: 0.7,
-        topP: 1,
-        frequencyPenalty: 0,
-        presencePenalty: 0,
-        isChatModel: false,
-        isStreaming: true,
-    } as ITextDavinci003);
-
-LLMProvider.registerProvider<IGPT35Turbo>(
-    "azure.gpt-35-turbo",
-    (model) => new GPT_35_TURBO(model as IGPT35Turbo),
-    (model, onConfigChange) => GPTConfig(model, (model) => onConfigChange(model as IGPT35Turbo)),
-    {
-        type: "azure.gpt-35-turbo",
+        type: "azure.gpt",
         maxTokens: 64,
         temperature: 0.7,
         topP: 1,
@@ -31,7 +16,7 @@ LLMProvider.registerProvider<IGPT35Turbo>(
         presencePenalty: 0,
         isChatModel: true,
         isStreaming: true,
-    } as IGPT35Turbo);
+    } as IGPT);
 
 // register embedding provider
 EmbeddingProvider.registerProvider<IAzureTextEmbeddingAda002V2>(

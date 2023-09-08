@@ -11,7 +11,7 @@ import { OpenAI } from "langchain";
 import { IEmbeddingModel, ILLMModel } from "@/model/type";
 
 // azure openai gpt parameters
-interface IGPTBaseModelConfiguration extends ILLMModel {
+export interface IGPTBaseModelConfiguration extends ILLMModel {
     resourceName?: string,
     deploymentID?: string,
     apiKey?: string,
@@ -24,19 +24,19 @@ interface IGPTBaseModelConfiguration extends ILLMModel {
     frequencyPenalty?: number,
 }
 
-interface IGPT35Turbo extends IGPTBaseModelConfiguration{
-    type: 'azure.gpt-35-turbo',
+export interface IGPT extends IGPTBaseModelConfiguration{
+    type: 'azure.gpt',
     isStreaming: true,
     isChatModel: true,
 }
 
-class GPT_35_TURBO extends ChatOpenAI implements IGPT35Turbo {
+export class GPT extends ChatOpenAI implements IGPT {
     isStreaming!: true;
     isChatModel!: true;
     description = "The ChatGPT model (gpt-35-turbo) is a language model designed for conversational interfaces and the model behaves differently than previous GPT-3 models. Previous models were text-in and text-out, meaning they accepted a prompt string and returned a completion to append to the prompt. However, the ChatGPT model is conversation-in and message-out. The model expects a prompt string formatted in a specific chat-like transcript format, and returns a completion that represents a model-written message in the chat."
-    type!: "azure.gpt-35-turbo";
+    type!: "azure.gpt";
 
-    constructor(fields: Partial<IGPT35Turbo>){
+    constructor(fields: Partial<IGPT>){
         super({
             temperature: fields.temperature,
             azureOpenAIApiKey: fields.apiKey,
@@ -93,18 +93,18 @@ class TextDavinci003 extends OpenAI {
 }
 
 // embedding models
-interface IAzureEmbeddingModel extends IEmbeddingModel{
+export interface IAzureEmbeddingModel extends IEmbeddingModel{
     apiKey?: string;
     resourceName?: string;
     deploymentName?: string;
     apiVersion?: string;
 }
 
-interface IAzureTextEmbeddingAda002V2 extends IAzureEmbeddingModel{
+export interface IAzureTextEmbeddingAda002V2 extends IAzureEmbeddingModel{
     type: "azure.text-embedding-ada-002-v2";
 }
 
-class AzureTextEmbeddingsAda002V2 extends OpenAIEmbeddings{
+export class AzureTextEmbeddingsAda002V2 extends OpenAIEmbeddings{
     type = "azure.text-embedding-ada-002-v2";
 
     constructor(fields: Partial<IAzureTextEmbeddingAda002V2>){
@@ -116,6 +116,3 @@ class AzureTextEmbeddingsAda002V2 extends OpenAIEmbeddings{
         });
     }
 }
-
-export { GPT_35_TURBO, TextDavinci003, AzureTextEmbeddingsAda002V2 };
-export type { IGPT35Turbo, ITextDavinci003, IAzureTextEmbeddingAda002V2 };

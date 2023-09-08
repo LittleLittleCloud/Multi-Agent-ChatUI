@@ -21,9 +21,9 @@ export interface ITextDavinci003 extends IOpenAIModel{
     isChatModel: false;
 }
 
-export interface IGPT35Turbo extends IOpenAIModel{
-    type: "openai.gpt-35-turbo";
-    model: "gpt-3.5-turbo" | "gpt-3.5-turbo-0613";
+export interface IGPT extends IOpenAIModel{
+    type: "openai.gpt";
+    model: string | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613" | "gpt-3.5-turbo-0301" | "gpt-4" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0613" | "gpt-4-0314" | "gpt-4-32k-0314";
     isStreaming: true;
     isChatModel: true;
 }
@@ -50,9 +50,9 @@ export class TextDavinci003 extends OpenAI{
     }
 }
 
-export class GPT_35_TURBO extends ChatOpenAI{
+export class GPT extends ChatOpenAI{
     type: string;
-    constructor(fields: IGPT35Turbo){
+    constructor(fields: IGPT){
         super({
             temperature: fields.temperature ?? 0.7,
             topP: fields.topP ?? 1,

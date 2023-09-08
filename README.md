@@ -5,10 +5,8 @@
 
 
 ## Support LLM
-- OpenAI.GPT-35-Turbo
-- OpenAI.Text-Davinci-003
-- Azure.GPT-35-Turbo
-- Azure.Text-Davinci-003
+- OpenAI.GPT
+- Azure.GPT
 
 ## Run locally ##
 ### Prerequisites

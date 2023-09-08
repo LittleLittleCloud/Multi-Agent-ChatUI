@@ -293,7 +293,7 @@ export const ChatInput: FC<Props> = ({
             }}
             inputRef={textareaRef}
             multiline={true}
-            placeholder={t('Type a message, markdown is supported, attach file by drag & drop') || ''}
+            placeholder={t('Type a message, markdown is supported') || ''}
             onChange={handleChange}
             value={content}/>
           }
@@ -330,7 +330,7 @@ export const ChatInput: FC<Props> = ({
                   onClick={() => setPreview(true)}>
                   <TinyLabel>Preview</TinyLabel>
                 </ToggleButton>
-                <ToggleButton
+                {/* <ToggleButton
                   component='label'>
                   <Tooltip title="Upload a File, supported format: csv, txt, tsv, json, pdf">
                     <TinyLabel>Upload a File</TinyLabel>
@@ -351,7 +351,7 @@ export const ChatInput: FC<Props> = ({
                     accept="image/*"
                     onChange={handleUploadFile}
                     hidden/>
-                </ToggleButton>
+                </ToggleButton> */}
               </ToggleButtonGroup>
 
               <ButtonGroup

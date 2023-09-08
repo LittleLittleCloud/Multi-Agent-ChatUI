@@ -81,9 +81,7 @@ export const ChatMessage: FC<Props> = memo(
                 }
               },
             }}>
-            {isUser ? 
-              <TinyAvatar avatarKey={"You"} /> :
-              <TinyAvatar avatarKey={agent?.avatar!}/>}
+            {!isUser && <TinyAvatar avatarKey={agent?.avatar!}/>}
             <Box
               sx={{
                 backgroundColor: 'background.secondary',
@@ -103,7 +101,11 @@ export const ChatMessage: FC<Props> = memo(
                 sx={{
                   alignItems: 'center',
                 }}>
-              {!isUser &&
+              {isUser ?
+                <TinyLabel
+                  sx={{
+                    color: 'text.secondary',
+                  }}>{t('You')}</TinyLabel> :
                 <TinyLabel
                   sx={{
                     color: 'text.secondary',

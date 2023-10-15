@@ -1,7 +1,7 @@
 import { IGroup } from '@/types/group';
-import { IAgent } from './agent';
 import JSZip from 'jszip';
 import { ChatBlobStorage, ImageBlobStorage } from '@/utils/blobStorage';
+import { IAgent } from '@/agent/type';
 
 export interface IUISettings extends IRecord{
 }

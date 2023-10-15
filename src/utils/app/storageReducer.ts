@@ -1,4 +1,4 @@
-import { IAgent } from "@/agent/type";
+import { IAgentRecord } from "@/agent/type";
 import { IGroup } from "@/types/group";
 import { IStorage } from "@/types/storage";
 
@@ -15,7 +15,7 @@ export type StorageCmd = "set" | "get"
     | "addOrUpdateGroup";
 
 
-export type StorageAction = {type: StorageCmd, payload?: IStorage | IGroup[] | IAgent[] | IAgent | IGroup, original?: IAgent | IGroup};
+export type StorageAction = {type: StorageCmd, payload?: IStorage | IGroup[] | IAgentRecord[] | IAgentRecord | IGroup, original?: IAgentRecord | IGroup};
 
 export function storageReducer(storage: IStorage, action: StorageAction) : IStorage{
     switch(action.type){
@@ -26,23 +26,23 @@ export function storageReducer(storage: IStorage, action: StorageAction) : IStor
         case "setGroups":
             return {...storage, groups: action.payload as IGroup[]};
         case "setAgents":
-            return {...storage, agents: action.payload as IAgent[]};
+            return {...storage, agents: action.payload as IAgentRecord[]};
         case "addAgent":
-            if(storage.agents.find(a => a.alias === (action.payload as IAgent)!.alias)){
+            if(storage.agents.find(a => a.alias === (action.payload as IAgentRecord)!.name)){
                 throw new Error("Agent already exists");
             }
-            return {...storage, agents: [...storage.agents, action.payload as IAgent]};
+            return {...storage, agents: [...storage.agents, action.payload as IAgentRecord]};
         case "removeAgent":
-            return {...storage, agents: storage.agents.filter(a => a.alias !== (action.payload as IAgent)!.alias)};
+            return {...storage, agents: storage.agents.filter(a => a.alias !== (action.payload as IAgentRecord)!.name)};
         case "updateAgent":
-            var originalAlias = (action.original as IAgent)?.alias ?? (action.payload as IAgent)!.alias;
-            return {...storage, agents: storage.agents.map(a => a.alias === originalAlias ? action.payload as IAgent : a)};
+            var originalAlias = (action.original as IAgentRecord)?.name ?? (action.payload as IAgentRecord)!.name;
+            return {...storage, agents: storage.agents.map(a => a.alias === originalAlias ? action.payload as IAgentRecord : a)};
         case "addOrUpdateAgent":
-            var existing = storage.agents.find(a => a.alias === (action.payload as IAgent)!.alias);
+            var existing = storage.agents.find(a => a.alias === (action.payload as IAgentRecord)!.name);
             if(existing){
-                return {...storage, agents: storage.agents.map(a => a.alias === (action.payload as IAgent)!.alias ? action.payload as IAgent : a)};
+                return {...storage, agents: storage.agents.map(a => a.alias === (action.payload as IAgentRecord)!.name ? action.payload as IAgentRecord : a)};
             }
-            return {...storage, agents: [...storage.agents, action.payload as IAgent]};
+            return {...storage, agents: [...storage.agents, action.payload as IAgentRecord]};
         case "addGroup":
             if(storage.groups.find(a => a.name === (action.payload as IGroup)!.name)){
                 throw new Error("Group already exists");

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { IGPT, ITextDavinci003 } from "./GPT";
+import { IOpenAIGPTRecord, ITextDavinci003 } from "./GPT";
 import { EditableSavableTextField, SettingSection, SmallNumberSetting, SmallSelectSetting, SmallTextSetting } from "@/components/Global/EditableSavableTextField";
 import { AVAILABLE_GPT_MODELS, getGPTMaxTokenLimit } from "../utils";
 
-export const ModelConfig = (model: IGPT, onModelConfigChanged : (config: IGPT) => void) => {
+export const ModelConfig = (model: IOpenAIGPTRecord, onModelConfigChanged : (config: IOpenAIGPTRecord) => void) => {
     const [maxToken, setMaxToken] = useState(model.maxTokens);
 
     useEffect(() => {

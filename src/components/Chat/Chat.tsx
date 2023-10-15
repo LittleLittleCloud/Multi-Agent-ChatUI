@@ -36,16 +36,16 @@ import { GroupAction, GroupCmd, groupReducer } from '@/utils/app/groupReducer';
 import { IGroup } from '@/types/group';
 import { Console, groupEnd } from 'console';
 import { StorageAction } from '@/utils/app/storageReducer';
-import { IAgent, IAgentExecutor } from '@/agent/type';
+import { IAgentRecord, IAgent } from '@/agent/type';
 import { AgentProvider } from '@/agent/agentProvider';
-import { IMessage, IsUserMessage } from '@/message/type';
+import { IChatMessageRecord, IsUserMessage } from '@/message/type';
 import { MultiAgentGroup } from '@/chat/group';
 import { Logger } from '@/utils/logger';
 import { Conversation } from './Conversation';
 import html2canvas from 'html2canvas';
 import { VariableModal } from './VariableModal';
 
-const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroup, agents: IAgent[], onSaved: (group: IGroup) => void, onCancel: () => void}> = ({open, group, agents, onSaved, onCancel}) => {
+const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroup, agents: IAgentRecord[], onSaved: (group: IGroup) => void, onCancel: () => void}> = ({open, group, agents, onSaved, onCancel}) => {
   const [groupName, setGroupName] = useState(group?.name);
   const [selectAgents, setSelectAgents] = useState(group?.agents ?? []); // [agentId]
   const [savable, setSavable] = useState<boolean>(false); // [agentId]
@@ -78,7 +78,7 @@ const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroup, agents: IAgent
           spacing={2}
           direction="column">
           <SmallTextField label="Group Name" value={groupName} onChange={(e) => setGroupName(e.target.value)} />
-          <SmallMultipleSelectField name="Agents" value={selectAgents} onChange={setSelectAgents} options={agents.map(a => a.alias)} />
+          <SmallMultipleSelectField name="Agents" value={selectAgents} onChange={setSelectAgents} options={agents.map(a => a.name)} />
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -88,7 +88,7 @@ const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroup, agents: IAgent
     </Dialog>);
 };
 
-const GroupPanel: FC<{groups: IGroup[], agents: IAgent[], onGroupSelected: (group?: IGroup) => void, storageDispatcher: Dispatch<StorageAction>}> = ({groups, agents, onGroupSelected, storageDispatcher}) => {
+const GroupPanel: FC<{groups: IGroup[], agents: IAgentRecord[], onGroupSelected: (group?: IGroup) => void, storageDispatcher: Dispatch<StorageAction>}> = ({groups, agents, onGroupSelected, storageDispatcher}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [groupToDelete, setGroupToDelete] = useState<IGroup | null>(null);
   const [groupToEdit, setGroupToEdit] = useState<IGroup>();
@@ -222,7 +222,7 @@ const GroupPanel: FC<{groups: IGroup[], agents: IAgent[], onGroupSelected: (grou
   )
 }
 
-export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Dispatch<StorageAction>}> =
+export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatcher: Dispatch<StorageAction>}> =
   ({
     groups,
     agents,
@@ -230,13 +230,14 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
   }) => {
     const { t } = useTranslation('chat');
     const [currentGroup, setCurrentGroup] = useState<IGroup>();
-    const [currentConversation, setCurrentConversation] = useState<IMessage[]>();
-    const [newMessage, setNewMessage] = useState<IMessage>();
+    const [currentConversation, setCurrentConversation] = useState<IChatMessageRecord[]>();
+    const [newMessage, setNewMessage] = useState<IChatMessageRecord>();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     // const [availableGroups, setAvailableGroups] = useState<IGroup[]>(groups);
     const [openCreateGroupDialog, setOpenCreateGroupDialog] = useState<boolean>(false);
     const [respondingAgentAlias, setRespondingAgentAlias] = useState<string|undefined>(undefined);
+    const [selectSpeakerMessage, setSelectSpeakerMessage] = useState<string|undefined>(undefined);
     const [conversationOverflowY, setConversationOverflowY] = useState<"visible" | "scroll">("scroll");
     const chatRef = useRef(null);
     useEffect(() => {
@@ -254,32 +255,44 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
       storageDispatcher({type: 'updateGroup', payload: {...currentGroup!, conversation: currentConversation}})
     }, [currentConversation]);
 
-    const newMessageHandler = async (message: IMessage, converstion: IMessage[], round: number = 5) => {
+    const newMessageHandler = async (message: IChatMessageRecord, converstion: IChatMessageRecord[], round: number = 5) => {
       setNewMessage(message);
-      var currentAgents = agents.filter(agent => currentGroup?.agents.includes(agent.alias));
-      var user: IAgent = {
-        alias: 'Human',
+      var currentAgents = agents.filter(agent => currentGroup?.agents.includes(agent.name));
+      var user: IAgentRecord = {
+        name: 'Human',
         avatar: 'You',
-        description: 'a user that seeks help from agents',
+        system_message: 'a user that seeks help from agents',
         type: 'agent',
       };
       var chat = new MultiAgentGroup(user, currentAgents, [...converstion, message]);
       for(var i = 0; i < round; i++){
+        setSelectSpeakerMessage(`Selecting speaker for round ${i+1}`);
         var rolePlay = await chat.selectNextSpeaker();
-        if (rolePlay.alias == chat.user.alias){
+        if (rolePlay.name == chat.user.name){
+          setSelectSpeakerMessage('no speaker is selected, please continue the conversation');
           return;
         }
         try{
-          setRespondingAgentAlias(rolePlay.alias);
+          setRespondingAgentAlias(rolePlay.name);
           var agentExecutor = AgentProvider.getProvider(rolePlay)(rolePlay);
           var response = await agentExecutor.rolePlay(chat.conversation, currentAgents);
           chat.pushMessage(response);
           setNewMessage(response);
-          setRespondingAgentAlias(undefined);
         }
         catch(e){
-          setRespondingAgentAlias(undefined);
         }
+        finally{
+          setRespondingAgentAlias(undefined);
+          setSelectSpeakerMessage(undefined);
+        }
+      }
+
+      setSelectSpeakerMessage('max round reached, please continue the conversation');
+    }
+
+    const onClearChatHistory = () => {
+      if (confirm('Are you sure you want to clear all messages?')) {
+        setCurrentConversation([]);
       }
     }
 
@@ -303,7 +316,7 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
 
         return;
       }
-      group.agents = group.agents.filter(agent => agents.find(a => a.alias === agent));
+      group.agents = group.agents.filter(agent => agents.find(a => a.name === agent));
       setCurrentGroup(group);
       setCurrentConversation(group.conversation);
     };
@@ -327,13 +340,13 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
       }
     }
 
-    const onDeleteMessage = (message: IMessage, index: number) => {
+    const onDeleteMessage = (message: IChatMessageRecord, index: number) => {
       currentConversation!.splice(index, 1);
       setCurrentConversation(currentConversation!);
       storageDispatcher({type: 'updateGroup', payload: {...currentGroup!, conversation: currentConversation!}})
     }
 
-    const onResendMessage = async (message: IMessage, index: number) => {
+    const onResendMessage = async (message: IChatMessageRecord, index: number) => {
       var resendMessage = currentConversation![index];
       currentConversation!.splice(index, 1);
       setCurrentConversation(currentConversation!);
@@ -473,9 +486,22 @@ export const Chat: FC<{groups: IGroup[], agents: IAgent[], storageDispatcher: Di
                   </SmallLabel>
                   <ThreeDotBouncingLoader/>
                 </Stack>}
+                {selectSpeakerMessage &&
+                <Stack
+                  spacing={1}
+                  direction="row">
+                  <SmallLabel
+                    color='text.secondary'
+                    sx = {{
+                      fontStyle: "italic",
+                    }}>
+                    {selectSpeakerMessage}
+                  </SmallLabel>
+                </Stack>}
                 <ChatInput
                     textareaRef={textareaRef}
                     messageIsStreaming={false}
+                    onClearChatHistory={onClearChatHistory}
                     onSend={async (message) => {
                       await newMessageHandler(message, currentConversation!);
                     }} />

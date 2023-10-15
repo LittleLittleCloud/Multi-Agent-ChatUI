@@ -1,29 +1,30 @@
 import { IChatAgent } from "@/agent/chatAgent";
-import { IGPT } from "@/model/openai/GPT"
 import { MultiAgentGroup } from "./group";
 import { Logger } from "@/utils/logger";
 import { AgentProvider } from "@/agent/agentProvider";
 import { IMarkdownMessage } from "@/message/MarkdownMessage";
-import { IAgent } from "@/agent/type";
+import { IAgentRecord } from "@/agent/type";
+import { IAzureGPTRecord } from "@/model/azure/GPT";
 
 test('multi-agent response test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
-    var llm: IGPT = {
-        type: "openai.gpt-35-turbo",
+    const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
+    var llm: IAzureGPTRecord = {
+        type: "azure.gpt",
+        deploymentID: "gpt-3.5-turbo-16k",
         isChatModel: true,
-        model: "gpt-3.5-turbo",
-        apiKey: OPENAI_API_KEY,
+        apiKey: AZURE_OPENAI_API_KEY,
         isStreaming: true,
         maxTokens: 64,
         temperature: 0.5,
         topP: 1,
         frequencyPenalty: 0,
-    } as IGPT;
+    } as IAzureGPTRecord;
 
     var alice: IChatAgent = {
         type: 'agent.chat',
-        alias: "alice",
-        description: "an enthusiastic bot with rich knowledge over computer science",
+        name: "alice",
+        system_message: "an enthusiastic bot with rich knowledge over computer science",
         avatar: "test",
         includeHistory: true,
         suffixPrompt: "alice:",
@@ -34,8 +35,8 @@ test('multi-agent response test', async () => {
 
     var bob: IChatAgent = {
         type: 'agent.chat',
-        alias: "bob",
-        description: "an enthusiastic bot with rich knowledge over real estate",
+        name: "bob",
+        system_message: "an enthusiastic bot with rich knowledge over real estate",
         avatar: "test",
         includeHistory: true,
         includeName: true,
@@ -44,11 +45,11 @@ test('multi-agent response test', async () => {
         llm: llm,
     } as IChatAgent;
 
-    var user: IAgent = {
-        alias: "Human",
-        description: "a user seeks for help, won't respond unless being mentioned",
+    var user: IAgentRecord = {
+        name: "Human",
+        system_message: "a user seeks for help, won't respond unless being mentioned",
         avatar: "test",
-    } as IAgent;
+    } as IAgentRecord;
 
     var group = new MultiAgentGroup(user, [alice, bob], []);
     var userMessage = {
@@ -59,12 +60,12 @@ test('multi-agent response test', async () => {
 
     group.pushMessage(userMessage);
     var nextAgent = await group.selectNextSpeaker();
-    expect(nextAgent.alias).toBe(bob.alias);
+    expect(nextAgent.name).toBe(bob.name);
 })
 
 test('multi-agent computer-real-restate conversation test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
-    var llm: IGPT = {
+    var llm: IAzureGPTRecord = {
         type: "openai.gpt-35-turbo",
         isChatModel: true,
         model: "gpt-3.5-turbo-0613",
@@ -74,12 +75,12 @@ test('multi-agent computer-real-restate conversation test', async () => {
         temperature: 0,
         topP: 1,
         frequencyPenalty: 0,
-    } as IGPT;
+    } as IAzureGPTRecord;
 
     var alice: IChatAgent = {
         type: 'agent.chat',
-        alias: "alice",
-        description: "a computer scientist",
+        name: "alice",
+        system_message: "a computer scientist",
         avatar: "test",
         includeHistory: true,
         suffixPrompt: "alice:",
@@ -90,8 +91,8 @@ test('multi-agent computer-real-restate conversation test', async () => {
 
     var bob: IChatAgent = {
         type: 'agent.chat',
-        alias: "bob",
-        description: "a real estate agent",
+        name: "bob",
+        system_message: "a real estate agent",
         avatar: "test",
         includeHistory: true,
         includeName: true,
@@ -100,27 +101,27 @@ test('multi-agent computer-real-restate conversation test', async () => {
         llm: llm,
     } as IChatAgent;
 
-    var user: IAgent = {
-        alias: "Human",
-        description: "a user seeks for help, won't respond unless being mentioned",
+    var user: IAgentRecord = {
+        name: "Human",
+        system_message: "a user seeks for help, won't respond unless being mentioned",
         avatar: "test",
-    } as IAgent;
+    } as IAgentRecord;
 
     var group = new MultiAgentGroup(user, [alice, bob], []);
     var userMessage = {
-        from: group.user.alias,
+        from: group.user.name,
         content: 'hello, I want to buy a house',
         type: 'message.markdown',
     };
 
     var nextMessage = await group.rolePlayWithMaxRound(userMessage, 5);
-    expect(nextMessage.from).toBe(group.user.alias);
+    expect(nextMessage.from).toBe(group.user.name);
     expect(nextMessage.content).not.toBe(group.TERMINATE_MESSAGE.content);
 })
 
 test('python-math-chat test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
-    var llm: IGPT = {
+    var llm: IAzureGPTRecord = {
         type: "openai.gpt-35-turbo",
         isChatModel: true,
         model: "gpt-3.5-turbo-0613",
@@ -130,12 +131,12 @@ test('python-math-chat test', async () => {
         temperature: 0,
         topP: 1,
         frequencyPenalty: 0,
-    } as IGPT;
+    } as IAzureGPTRecord;
 
     var teacher: IChatAgent = {
         type: 'agent.chat',
-        alias: "teacher",
-        description: "a teacher",
+        name: "teacher",
+        system_message: "a teacher",
         avatar: "test",
         includeHistory: true,
         suffixPrompt: "teacher:",
@@ -146,8 +147,8 @@ test('python-math-chat test', async () => {
 
     var student: IChatAgent = {
         type: 'agent.chat',
-        alias: "student",
-        description: "a student",
+        name: "student",
+        system_message: "a student",
         avatar: "test",
         includeHistory: true,
         includeName: true,
@@ -156,27 +157,27 @@ test('python-math-chat test', async () => {
         llm: llm,
     } as IChatAgent;
 
-    var user: IAgent = {
-        alias: "Human",
-        description: "a user seeks for help, won't respond unless being mentioned",
+    var user: IAgentRecord = {
+        name: "Human",
+        system_message: "a user seeks for help, won't respond unless being mentioned",
         avatar: "test",
-    } as IAgent;
+    } as IAgentRecord;
 
     var group = new MultiAgentGroup(user, [teacher, student], []);
     var userMessage = {
-        from: user.alias,
+        from: user.name,
         content: 'hello, teacher, teach student on how to resolve 1+2+3+...+100 in python? And report back to me when you are done.',
         type: 'message.markdown',
     } as IMarkdownMessage;
 
     var nextMessage = await group.rolePlayWithMaxRound(userMessage, 10);
-    expect(nextMessage.from).toBe(group.user.alias);
+    expect(nextMessage.from).toBe(group.user.name);
     expect(nextMessage.content).not.toBe(group.TERMINATE_MESSAGE.content);
 })
 
 test('single-agent max-vote test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
-    var llm: IGPT = {
+    var llm: IAzureGPTRecord = {
         type: "openai.gpt-35-turbo",
         isChatModel: true,
         model: "gpt-3.5-turbo-0613",
@@ -186,12 +187,12 @@ test('single-agent max-vote test', async () => {
         temperature: 0,
         topP: 1,
         frequencyPenalty: 0,
-    } as IGPT;
+    } as IAzureGPTRecord;
 
     var alice: IChatAgent = {
         type: 'agent.chat',
-        alias: "alice",
-        description: "a computer scientist",
+        name: "alice",
+        system_message: "a computer scientist",
         avatar: "test",
         includeHistory: true,
         suffixPrompt: "alice:",
@@ -200,21 +201,21 @@ test('single-agent max-vote test', async () => {
         llm: llm,
     } as IChatAgent;
 
-    var user: IAgent = {
-        alias: "Human",
-        description: "a user seeks for help",
+    var user: IAgentRecord = {
+        name: "Human",
+        system_message: "a user seeks for help",
         avatar: "test",
-    } as IAgent;
+    } as IAgentRecord;
 
     var group = new MultiAgentGroup(user, [alice], []);
 
     var userMessage = {
-        from: group.user.alias,
+        from: group.user.name,
         content: 'hello, I want to buy a house',
         type: 'message.markdown',
     };
     var nextMessage = await group.rolePlay(userMessage);
-    expect(nextMessage.from).toBe(alice.alias);
+    expect(nextMessage.from).toBe(alice.name);
     nextMessage = await group.rolePlay(nextMessage);
-    expect(nextMessage.from).toBe(group.user.alias);
+    expect(nextMessage.from).toBe(group.user.name);
 })

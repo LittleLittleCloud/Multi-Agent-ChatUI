@@ -1,18 +1,12 @@
-import { BaseLLM, BaseLLMParams, LLM } from "langchain/llms/base";
-import { IJsonConverter, extract } from "@/utils/app/convertJson";
-import { injectable } from "inversify";
-import { IRecord } from "@/types/storage";
-import { RecordMap } from "@/utils/app/recordProvider";
-import { CallbackManagerForLLMRun } from "langchain/callbacks";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { type } from "os";
-import { ChatOpenAI } from "langchain/chat_models/openai";
-import { OpenAI } from "langchain";
-import { IEmbeddingModel, ILLMModel } from "@/model/type";
+import { IEmbeddingModel, IChatModelRecord, IChatModel } from "@/model/type";
+import { IChatMessage } from "@/message/type";
+import { OpenAIClient, AzureKeyCredential } from "@azure/openai";
+import { convertToOpenAIChatMessages } from "../utils";
 
 // azure openai gpt parameters
-export interface IGPTBaseModelConfiguration extends ILLMModel {
-    resourceName?: string,
+export interface IGPTBaseModelConfiguration extends IChatModelRecord {
+    endpoint?: string,
     deploymentID?: string,
     apiKey?: string,
     temperature?: number,
@@ -24,71 +18,71 @@ export interface IGPTBaseModelConfiguration extends ILLMModel {
     frequencyPenalty?: number,
 }
 
-export interface IGPT extends IGPTBaseModelConfiguration{
+export interface IAzureGPTRecord extends IGPTBaseModelConfiguration{
     type: 'azure.gpt',
     isStreaming: true,
     isChatModel: true,
 }
 
-export class GPT extends ChatOpenAI implements IGPT {
-    isStreaming!: true;
-    isChatModel!: true;
-    description = "The ChatGPT model (gpt-35-turbo) is a language model designed for conversational interfaces and the model behaves differently than previous GPT-3 models. Previous models were text-in and text-out, meaning they accepted a prompt string and returned a completion to append to the prompt. However, the ChatGPT model is conversation-in and message-out. The model expects a prompt string formatted in a specific chat-like transcript format, and returns a completion that represents a model-written message in the chat."
-    type!: "azure.gpt";
 
-    constructor(fields: Partial<IGPT>){
-        super({
-            temperature: fields.temperature,
-            azureOpenAIApiKey: fields.apiKey,
-            azureOpenAIApiInstanceName: fields.resourceName,
-            azureOpenAIApiDeploymentName: fields.deploymentID,
-            topP: fields.topP,
-            maxTokens: fields.maxTokens,
-            stop: fields.stop,
-            azureOpenAIApiVersion: fields.apiVersion ?? '2023-03-15-preview',
-            presencePenalty: fields.presencePenalty,
-            frequencyPenalty: fields.frequencyPenalty,
-        });
-        this.description = fields.description ?? this.description;
-    }
-
-    _llmType(): string {
-        return this.type;
-    }
-}
-
-interface ITextDavinci003 extends IGPTBaseModelConfiguration{
-    type: 'azure.text-davinci-003';
+export class AzureGPT implements IChatModel, IAzureGPTRecord {
+    type: 'azure.gpt';
     isStreaming: true;
-    isChatModel: false;
-}
+    isChatModel: true;
+    endpoint: string;
+    deploymentID?: string;
+    apiKey: string;
+    temperature?: number;
+    apiVersion?: string;
+    maxTokens?: number;
+    topP?: number;
+    stop?: string[];
+    presencePenalty?: number;
+    frequencyPenalty?: number;
 
-class TextDavinci003 extends OpenAI {
-    isStreaming = true;
-    isChatModel = false;
-    description = `Davinci is the most capable model and can perform any task the other models can perform, often with less instruction. For applications requiring deep understanding of the content, like summarization for a specific audience and creative content generation, Davinci produces the best results. The increased capabilities provided by Davinci require more compute resources, so Davinci costs more and isn't as fast as other models.
-    Another area where Davinci excels is in understanding the intent of text. Davinci is excellent at solving many kinds of logic problems and explaining the motives of characters. Davinci has been able to solve some of the most challenging AI problems involving cause and effect.`
-    type = "azure.text-davinci-003";
-
-    constructor(fields: Partial<ITextDavinci003>){
-        super({
-            temperature: fields.temperature,
-            azureOpenAIApiKey: fields.apiKey,
-            azureOpenAIApiInstanceName: fields.resourceName,
-            azureOpenAIApiDeploymentName: fields.deploymentID,
-            topP: fields.topP,
-            maxTokens: fields.maxTokens,
-            stop: fields.stop,
-            azureOpenAIApiVersion: fields.apiVersion ?? '2023-03-15-preview',
-            presencePenalty: fields.presencePenalty,
-            frequencyPenalty: fields.frequencyPenalty,
-        });
-
-        this.description = fields.description ?? this.description;
+    constructor(fields: Partial<IAzureGPTRecord>){
+        this.endpoint = fields.endpoint!;
+        this.deploymentID = fields.deploymentID;
+        this.apiKey = fields.apiKey!;
+        this.temperature = fields.temperature;
+        this.apiVersion = fields.apiVersion;
+        this.maxTokens = fields.maxTokens;
+        this.topP = fields.topP;
+        this.stop = fields.stop;
+        this.presencePenalty = fields.presencePenalty;
+        this.frequencyPenalty = fields.frequencyPenalty;
+        this.type = 'azure.gpt';
+        this.isStreaming = true;
+        this.isChatModel = true;
     }
 
-    _llmType(): string {
-        return this.type;
+    async getChatCompletion(messages: IChatMessage[], temperature?: number | undefined, maxTokens?: number | undefined, topP?: number | undefined, presencePenalty?: number | undefined, frequencyPenalty?: number | undefined, stop?: string[] | undefined): Promise<IChatMessage> {
+        var client = new OpenAIClient(this.endpoint, new AzureKeyCredential(this.apiKey));
+
+        var msg = convertToOpenAIChatMessages(messages);
+
+        var choices = await client.getChatCompletions(
+            this.deploymentID!,
+            msg,
+            {
+                temperature: temperature ?? this.temperature ?? 0.7,
+                maxTokens: maxTokens ?? this.maxTokens ?? 64,
+                topP: topP ?? this.topP ?? 1,
+                presencePenalty: presencePenalty ?? this.presencePenalty ?? 0,
+                frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty ?? 0,
+                stop: stop ?? this.stop ?? [],
+            }
+        );
+        
+        var replyMessage = choices.choices[0].message;
+        if (replyMessage == null){
+            throw new Error("Reply message is null");
+        }
+
+        return {
+            content: replyMessage.content,
+            role: replyMessage.role,
+        } as IChatMessage;
     }
 }
 

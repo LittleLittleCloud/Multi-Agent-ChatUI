@@ -17,16 +17,18 @@ import { Box, Button, ButtonGroup, Stack, TextField, ToggleButton, ToggleButtonG
 import { CentralBox, Label, SmallClickableLabel, SmallLabel, SmallTextButton, TinyLabel, TinyTextButton } from '../Global/EditableSavableTextField';
 import { Markdown } from '../Global/Markdown';
 import { ChatBlobStorage, ImageBlobStorage } from '@/utils/blobStorage';
-import { IMessage } from '@/message/type';
+import { IChatMessageRecord } from '@/message/type';
 
 interface Props {
   messageIsStreaming: boolean;
-  onSend: (message: IMessage) => void;
+  onSend: (message: IChatMessageRecord) => void;
+  onClearChatHistory: () => void;
 }
 
 export const ChatInput: FC<Props> = ({
   messageIsStreaming,
   onSend,
+  onClearChatHistory,
 }) => {
   const { t } = useTranslation('chat');
 
@@ -77,6 +79,10 @@ export const ChatInput: FC<Props> = ({
     if (window.innerWidth < 640 && textareaRef && textareaRef.current) {
       textareaRef.current.blur();
     }
+  };
+
+  const handleClearChatHistory = () => {
+    onClearChatHistory();
   };
 
   const isMobile = () => {
@@ -356,6 +362,10 @@ export const ChatInput: FC<Props> = ({
 
               <ButtonGroup
                 size='small'>
+                <TinyTextButton
+                  onClick={handleClearChatHistory}>
+                    Clear chat history
+                </TinyTextButton>
                 <TinyTextButton
                   onClick={handleSend}>
                     Send

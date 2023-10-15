@@ -1,4 +1,4 @@
 import { Provider } from "@/utils/app/provider";
-import { IAgent, IAgentExecutor } from "./type";
+import { IAgentRecord, IAgent } from "./type";
 
-export const AgentProvider = new Provider<IAgent, (config: IAgent) => IAgentExecutor >();
+export const AgentProvider = new Provider<IAgentRecord, (config: IAgentRecord) => IAgent>();

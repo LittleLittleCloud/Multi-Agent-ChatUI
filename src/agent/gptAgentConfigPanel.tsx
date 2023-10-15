@@ -1,17 +1,19 @@
-import { ChatAgentExecutor, IChatAgent, IZeroshotAgentMessage } from './chatAgent';
+import { IGPTAgentRecord, IZeroshotAgentMessage } from './gptAgent';
 import { CentralBox, EditableSavableTextField, EditableSelectField, SettingSection, SmallLabel, SmallMultipleSelectSetting, SmallSelectSetting, SmallTextSetting, SmallToggleSetting, TinyClickableLabel, TinyLabel, useEffectAsync } from '@/components/Global/EditableSavableTextField';
 import { Box, Chip, Divider, Stack, Tab, Tabs } from '@mui/material';
 import React from 'react';
 import { Markdown } from "@/components/Global/Markdown";
 import { EmbeddingProvider, LLMProvider } from "@/model/llmprovider";
-import { IMessage } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 import { MemoryProvider } from '@/memory/memoryProvider';
-import { IEmbeddingModel, ILLMModel, IModel } from '@/model/type';
+import { IEmbeddingModel, IChatModelRecord, IModel } from '@/model/type';
 import { IMemory } from '@/memory/type';
-import { AgentProvider } from './agentProvider';
+import { AzureGPT } from "@/model/azure/GPT";
+import { IOpenAIGPTRecord, OpenAIGPT } from "@/model/openai/GPT";
+
 var globalTabIndex = 0;
 
-export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (config: IChatAgent) => void) => {
+export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChanged: (config: IGPTAgentRecord) => void) => {
     const [selectedLLMModelID, setSelectedLLMModelID] = React.useState(agent.llm?.type);
     const [llm, setLLM] = React.useState(agent.llm);
     const [embedding, setEmbedding] = React.useState(agent.embedding);
@@ -21,9 +23,9 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
     const availableLLMModels = LLMProvider.getAvailableModels();
     const availableMemories = MemoryProvider.getAvailableModels();
     const availableEmbeddingModels = EmbeddingProvider.getAvailableModels();
-    const LLMSettingPanel = (props: {model: ILLMModel, onChange: (model: ILLMModel) => void}) => {
+    const LLMSettingPanel = (props: {model: IChatModelRecord, onChange: (model: IChatModelRecord) => void}) => {
         if(selectedLLMModelID != undefined && LLMProvider.hasProvider(selectedLLMModelID)){
-            return LLMProvider.getConfigUIProvider(selectedLLMModelID)(props.model, (model: IModel) => props.onChange(model as ILLMModel));
+            return LLMProvider.getConfigUIProvider(selectedLLMModelID)(props.model, (model: IModel) => props.onChange(model as IChatModelRecord));
         }
         return <></>;
     }
@@ -50,28 +52,37 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
     React.useEffect(() => {
         // create default llm config
         if(selectedLLMModelID != agent.llm?.type && selectedLLMModelID != undefined){
-            var newLLM: ILLMModel = LLMProvider.getDefaultValue(selectedLLMModelID);
-            setLLM(newLLM);
-            onAgentConfigChanged({...agent, llm: newLLM});
+            var newLLM: IChatModelRecord = LLMProvider.getDefaultValue(selectedLLMModelID);
+            // check if llm is AzureGPT or OpenAIGPT
+            if (newLLM instanceof AzureGPT || newLLM instanceof OpenAIGPT) {
+                setLLM(newLLM);
+                onAgentConfigChanged({...agent, llm: newLLM});
+            }
+            else
+            {
+                throw new Error("llm model not supported");
+            }
         }
     }, [selectedLLMModelID]);
 
     useEffectAsync(async () => {
-        var currentMessage: IMessage = {
+        var currentMessage: IChatMessageRecord = {
             type: "message",
-            from: "user",
+            name: "user",
+            role: "user",
             content: "hello world",
         };
 
-        var history: IMessage[] = [
+        var history: IChatMessageRecord[] = [
             {
                 type: "message",
-                from: "agent",
+                name: "agent",
+                role: "assistant",
                 content: "hello world",
-            } as IMessage,
+            } as IChatMessageRecord,
         ];
 
-        var prompt = agent.description;
+        var prompt = agent.system_message;
         setPromptPreview(prompt);
     }, [agent]);
 
@@ -137,9 +148,21 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
                 <SettingSection
                         title='llm setting'
                         toolTip='llm settings'>
-                        <SmallSelectSetting name='selected llm model' options={availableLLMModels} value={selectedLLMModelID} onChange={(value) => setSelectedLLMModelID(value)}/>
-                        {selectedLLMModelID && llm != undefined &&
-                            <LLMSettingPanel model = {llm} onChange={(model) => onAgentConfigChanged({...agent, llm: model})}/>
+                        <SmallSelectSetting name='selected llm model' options={availableLLMModels} value={selectedLLMModelID} onChange={(value) => {
+                            if (value == 'azure.gpt' || value == 'openai.gpt') {
+                                setSelectedLLMModelID(value);
+                            } else {
+                                throw new Error("llm model not supported");
+                            }
+                        }}/>
+                        {selectedLLMModelID && llm != undefined && (llm instanceof AzureGPT || llm instanceof OpenAIGPT) &&
+                            <LLMSettingPanel model={llm} onChange={(model) => {
+                                if (model instanceof AzureGPT || model instanceof OpenAIGPT) {
+                                    onAgentConfigChanged({...agent, llm: model});
+                                } else {
+                                    throw new Error("llm model not supported");
+                                }
+                            }}/>
                         }
                     </SettingSection>
             </TabPanel>
@@ -196,9 +219,8 @@ export const ChatAgentConfigPanel = (agent : IChatAgent, onAgentConfigChanged: (
 
 export const MarkdownMessage = (message: IZeroshotAgentMessage, onChange: (message: IZeroshotAgentMessage) => void) => {
     const prompt = message.prompt ?? "no prompt";
-    const error = message.error;
-    const content = error ?? message.content;
-    const [openContent, setOpenContent] = React.useState<'markdown' | 'plain text' | 'prompt' | 'error'>(error ? "error" : "markdown");
+    const content = message.content;
+    const [openContent, setOpenContent] = React.useState<'markdown' | 'plain text' | 'prompt' | 'error'>("markdown");
     return (
         <Stack
             direction="column"
@@ -210,11 +232,6 @@ export const MarkdownMessage = (message: IZeroshotAgentMessage, onChange: (messa
                 openContent === 'plain text' &&
                 <SmallLabel>{content.replace('\n', '<br />')}</SmallLabel>
             }
-            {
-                openContent === 'error' &&
-                <SmallLabel
-                    color='error.main'>{error}</SmallLabel>
-            }
             {openContent === 'prompt' &&
                 <SmallLabel>{prompt}</SmallLabel>
             }
@@ -222,15 +239,6 @@ export const MarkdownMessage = (message: IZeroshotAgentMessage, onChange: (messa
                 direction="row"
                 spacing={1}>
                 {
-                    error &&
-                    <TinyLabel
-                        onClick={() => setOpenContent('error')}
-                        sx = {{
-                            color: openContent == 'error' ? 'error.dark' : 'error.main',
-                        }}>error</TinyLabel>
-                }
-                {
-                    !error &&
                     <TinyClickableLabel
                     onClick={() => setOpenContent('markdown')}
                     sx = {{

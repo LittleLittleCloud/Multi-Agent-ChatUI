@@ -18,7 +18,7 @@ import { DeleteConfirmationDialog } from '../Global/DeleteConfirmationDialog';
 import { StorageAction } from '@/utils/app/storageReducer';
 import { ImageBlobStorage } from '@/utils/blobStorage';
 import { AgentProvider } from '@/agent/agentProvider';
-import { IAgent } from '@/agent/type';
+import { IAgentRecord } from '@/agent/type';
 
 const CreateAgentDialog = (props: {open: boolean, onClose: () => void, storageDispatcher: Dispatch<StorageAction>}) => {
     const [alias, setAlias] = useState("");
@@ -30,7 +30,7 @@ const CreateAgentDialog = (props: {open: boolean, onClose: () => void, storageDi
         setIsSavable(alias != "" && agentID != null);
     }, [alias, agentID]);
 
-    const onAgentCreatedHandler = (agent: IAgent) => {
+    const onAgentCreatedHandler = (agent: IAgentRecord) => {
         try{
             props.storageDispatcher({type: 'addAgent', payload: agent});
             props.onClose();
@@ -69,27 +69,27 @@ const CreateAgentDialog = (props: {open: boolean, onClose: () => void, storageDi
                 <Button onClick={props.onClose}>Cancel</Button>
                 <Button
                     disabled={!isSavable}
-                    onClick={() => onAgentCreatedHandler({...AgentProvider.getDefaultValue(agentID!), alias: alias})}>Create</Button>
+                    onClick={() => onAgentCreatedHandler({...AgentProvider.getDefaultValue(agentID!), name: alias})}>Create</Button>
             </DialogActions>
         </Dialog>
     );
 }
 
-export const AgentPage: FC<{availableAgents: IAgent[], storageDispatcher: Dispatch<StorageAction>}> = ({availableAgents, storageDispatcher}) => {
-    const [selectedAgent, setSelectedAgent] = useState<IAgent>();
+export const AgentPage: FC<{availableAgents: IAgentRecord[], storageDispatcher: Dispatch<StorageAction>}> = ({availableAgents, storageDispatcher}) => {
+    const [selectedAgent, setSelectedAgent] = useState<IAgentRecord>();
     const [tab, setTab] = useState("1");
     const [onOpenCreateAgentDialog, setOpenCreateAgentDialog] = useState(false);
     const [onOpenSettingMenu, setOpenSettingMenu] = useState(-1);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
-    const [agentToDelete, setAgentToDelete] = useState<IAgent | null>(null);
+    const [agentToDelete, setAgentToDelete] = useState<IAgentRecord | null>(null);
     const registeredAgents = AgentProvider.getAvailableModels();
 
     const handleClose = () => {
         setAnchorEl(null);
       };
 
-    const AgentAdvancedSettingPanel = (props: { agent: IAgent, onchange: (agent: IAgent) => void}) => {
+    const AgentAdvancedSettingPanel = (props: { agent: IAgentRecord, onchange: (agent: IAgentRecord) => void}) => {
         if(!AgentProvider.hasProvider(props.agent.type)){
             return <Typography>Not implemented</Typography>
         }
@@ -102,9 +102,9 @@ export const AgentPage: FC<{availableAgents: IAgent[], storageDispatcher: Dispat
         setAnchorEl(null);
     }
 
-    const onAgentDeletedHandler = (agent: IAgent) => {
+    const onAgentDeletedHandler = (agent: IAgentRecord) => {
         storageDispatcher({type: 'removeAgent', payload: agent});
-        if(selectedAgent?.alias == agent.alias){
+        if(selectedAgent?.name == agent.name){
             setSelectedAgent(undefined);
         }
         setAgentToDelete(null);
@@ -133,15 +133,15 @@ export const AgentPage: FC<{availableAgents: IAgent[], storageDispatcher: Dispat
         reader.readAsArrayBuffer(file);
     };
 
-    const onAgentUpdatedHandler = (agent: IAgent, original?: IAgent) => {
+    const onAgentUpdatedHandler = (agent: IAgentRecord, original?: IAgentRecord) => {
         storageDispatcher({type: 'updateAgent', payload: agent, original: original ?? selectedAgent});
         setSelectedAgent(agent);
     };
 
-    const onAgentCloneHandler = (agent: IAgent) => {
+    const onAgentCloneHandler = (agent: IAgentRecord) => {
         // deep copy
-        var clonedAgent = JSON.parse(JSON.stringify(agent)) as IAgent;
-        clonedAgent.alias = clonedAgent.alias + " (clone)";
+        var clonedAgent = JSON.parse(JSON.stringify(agent)) as IAgentRecord;
+        clonedAgent.name = clonedAgent.name + " (clone)";
         storageDispatcher({type: 'addAgent', payload: clonedAgent});
         onCloseSettingMenu();
     };
@@ -217,7 +217,7 @@ export const AgentPage: FC<{availableAgents: IAgent[], storageDispatcher: Dispat
             <List>
                 {availableAgents.map((agent, index) => 
                     <SelectableListItem
-                        selected={selectedAgent?.alias == agent.alias}
+                        selected={selectedAgent?.name == agent.name}
                         key={index}
                         onClick={() => setSelectedAgent(availableAgents[index])}>
                         <Stack
@@ -240,7 +240,7 @@ export const AgentPage: FC<{availableAgents: IAgent[], storageDispatcher: Dispat
                                     display: "flex",
                                     alignItems: "center",
                                 }}>
-                                <SmallLabel>{agent.alias}</SmallLabel>
+                                <SmallLabel>{agent.name}</SmallLabel>
                             </Box>
                             <CentralBox
                                 sx={{
@@ -312,8 +312,8 @@ export const AgentPage: FC<{availableAgents: IAgent[], storageDispatcher: Dispat
                                     width="70%"
                                     direction="column"
                                     spacing={2}>
-                                    <SmallTextSetting name="alias" toolTip='The name of the agent' value={selectedAgent.alias} onChange={(value) => onAgentUpdatedHandler({...selectedAgent, alias: value!}, selectedAgent)} />
-                                    <SmallTextSetting name="description" toolTip='The description of the agent' value={selectedAgent.description} onChange={(value) => onAgentUpdatedHandler({...selectedAgent, description: value!}, selectedAgent)} />
+                                    <SmallTextSetting name="alias" toolTip='The name of the agent' value={selectedAgent.name} onChange={(value) => onAgentUpdatedHandler({...selectedAgent, name: value!}, selectedAgent)} />
+                                    <SmallTextSetting name="description" toolTip='The description of the agent' value={selectedAgent.system_message} onChange={(value) => onAgentUpdatedHandler({...selectedAgent, system_message: value!}, selectedAgent)} />
                                     <SmallSelectSetting name='agent type' toolTip='the type of agent' options={registeredAgents} value={selectedAgent.type} onChange={(value) => onAgentUpdatedHandler({...selectedAgent, type: value!}, selectedAgent)}/>
                                 </Stack>
                                 <CentralBox

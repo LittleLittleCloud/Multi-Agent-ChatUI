@@ -1,7 +1,7 @@
 import { InputValues } from "langchain/dist/schema";
 import { BaseMemory } from "langchain/memory";
 import { IMemory } from "./type";
-import { IMessage } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 export type OutputValues = Record<string, any>;
 export type MemoryVariables = Record<string, any>;
 
@@ -17,10 +17,10 @@ export class ChatMemory extends BaseMemory{
     memoryKey = "history";
     outputKey = "output";
     useChatML = false;
-    chatHistory: Omit<IMessage, 'type'>[] = [];
+    chatHistory: Omit<IChatMessageRecord, 'type'>[] = [];
     maxHistoryLength = 16;
 
-    constructor({memoryKey, maxHistoryLength, history}: IChatMemory & { history?: IMessage[] }){
+    constructor({memoryKey, maxHistoryLength, history}: IChatMemory & { history?: IChatMessageRecord[] }){
         super();
         if(memoryKey){
             this.memoryKey = memoryKey;
@@ -33,7 +33,7 @@ export class ChatMemory extends BaseMemory{
         }
     }
 
-    async removeChatMessage(message: IMessage): Promise<void> {
+    async removeChatMessage(message: IChatMessageRecord): Promise<void> {
         var index = this.chatHistory.findIndex((m) => m.content === message.content);
         if(index >= 0){
             this.chatHistory.splice(index, 1);
@@ -41,7 +41,7 @@ export class ChatMemory extends BaseMemory{
     }
 
     async saveContext(inputValues: InputValues, outputValues: OutputValues): Promise<void> {
-        var content: IMessage = inputValues['message'];
+        var content: IChatMessageRecord = inputValues['message'];
         if (content.from == 'system'){
             return;
         }

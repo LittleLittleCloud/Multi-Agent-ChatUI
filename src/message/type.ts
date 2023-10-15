@@ -1,19 +1,27 @@
 import { IRecord } from '@/types/storage';
+export type Role = 'assistant' | 'user' | 'system' | 'function';
 
-export interface Message {
+export interface IFunctionCall
+{
+  name: string;
+  arguments: string;
+}
+
+export interface IChatMessage {
   role: Role;
   content: string;
+  name?: string;
+  function_call?: IFunctionCall;
 }
 
-export type Role = 'assistant' | 'user';
-export interface IMessage extends IRecord{
+export interface IChatMessageRecord extends IRecord, IChatMessage{
   timestamp?: number,
-  from: string | '__user',
-  type: string,
-  content: string,
-  prompt?: string,
 }
 
-export function IsUserMessage(message: IMessage): boolean{
-  return message.from === "__user" || message.from === "user" || message.from === "Avatar" || message.from === "Human";
+export function IsUserMessage(message: IChatMessageRecord): boolean{
+  return message.role === "user";
+}
+
+export function IsFunctionCallMessage(message: IChatMessageRecord): boolean{
+  return message.function_call !== undefined;
 }

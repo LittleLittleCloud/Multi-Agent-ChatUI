@@ -16,6 +16,7 @@ import { Logger } from "@/utils/logger";
 import { AzureGPT, IAzureGPTRecord } from "@/model/azure/GPT";
 import { IOpenAIGPTRecord } from "@/model/openai/GPT";
 import { LLMProvider } from "@/model/llmprovider";
+import { FunctionDefinition } from "@azure/openai";
 
 export interface IZeroshotAgentMessage extends IChatMessageRecord{
   type: 'message.zeroshot',
@@ -41,8 +42,9 @@ export class GPTAgent implements IAgent, IGPTAgentRecord {
   embedding?: IEmbeddingModel | undefined;
   system_message: string;
   avatar: string;
+  function_map?: Map<FunctionDefinition, (arg: string) => Promise<string>>;
 
-  constructor(agent: Partial<IGPTAgentRecord>) {
+  constructor(agent: Partial<IGPTAgentRecord & {function_map: Map<FunctionDefinition, (arg: string) => Promise<string>>}>) {
     Logger.debug("initialize chat agent executor");
     this.name = agent.name ?? "GPT";
     this.type = 'agent.gpt';
@@ -51,6 +53,7 @@ export class GPTAgent implements IAgent, IGPTAgentRecord {
     this.embedding = agent.embedding;
     this.system_message = agent.system_message ?? "You are a helpful AI assistant";
     this.avatar = agent.avatar ?? "GPT";
+    this.function_map = agent.function_map;
   }
 
   async callAsync(messages: IChatMessage[], temperature?: number | undefined, stop_words?: string[] | undefined, max_tokens?: number | undefined): Promise<IChatMessage> {
@@ -64,13 +67,43 @@ export class GPTAgent implements IAgent, IGPTAgentRecord {
     } as IChatMessage;
     var llmProvider = LLMProvider.getProvider(llmRecord);
     var llm = llmProvider(llmRecord);
-    var msg = await llm.getChatCompletion([
-      system_msg,
-      ...messages,
-    ] as IChatMessage[], temperature, max_tokens, undefined, undefined, undefined, stop_words);
-    msg.name = this.name;
+    var msg = await llm.getChatCompletion({
+      messages: [system_msg, ...messages],
+      temperature: temperature,
+      maxTokens: max_tokens,
+      stop: stop_words,
+      functions: this.function_map ? Array.from(this.function_map.keys()) : undefined,
+    });
+    msg.from = this.name;
+    // if message is a function_call, execute the function
+    if(msg.function_call != undefined && this.function_map != undefined){
+      var functionDefinitions = Array.from(this.function_map?.keys() ?? []);
+      var functionDefinition = functionDefinitions.find(f => f.name == msg.function_call!.name);
+      var func = functionDefinition ? this.function_map.get(functionDefinition) : undefined;
+      if(func){
+        try{
+          var result = await func(msg.function_call.arguments);
+          msg.content = result;
+          msg.name = msg.function_call.name;
+        }
+        catch(e){
+          var errorMsg = `Error executing function ${msg.function_call.name}: ${e}`;
+          msg.content = errorMsg;
+          msg.name = msg.function_call.name;
+        }
+      }
+      else{
+        var availableFunctions = Array.from(this.function_map?.keys() ?? []);
+        var errorMsg = `Function ${msg.function_call.name} not found. Available functions: ${availableFunctions.map(f => f.name).join(", ")}`;
+        msg.content = errorMsg;
+        msg.function_call = undefined;
+      }
 
-    return msg;
+      return msg;
+    }
+    else{
+      return msg;
+    }
   }
 }
 

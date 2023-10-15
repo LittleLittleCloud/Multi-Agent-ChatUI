@@ -1,8 +1,8 @@
-import { IChatModel, IChatModelRecord } from "../type";
+import { ChatCompletionParams, IChatModel, IChatModelRecord } from "../type";
 import { IChatMessage } from "@/message/type";
-import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { convertToOpenAIChatMessages } from "../utils";
+import { OpenAIClient, OpenAIKeyCredential } from "@azure/openai";
 
 export interface IOpenAIModel extends IChatModelRecord
 {
@@ -81,33 +81,34 @@ export class OpenAIGPT implements IChatModel, IOpenAIGPTRecord{
         this.stop = fields.stop ?? [];
     }
 
-    async getChatCompletion(messages: IChatMessage[], temperature?: number | undefined, maxTokens?: number | undefined, topP?: number | undefined, presencePenalty?: number | undefined, frequencyPenalty?: number | undefined, stop?: string[] | undefined): Promise<IChatMessage> {
-        var openai = new OpenAI({
-            apiKey: this.apiKey,
-            timeout: 120000,
-        })
+    async getChatCompletion(params: ChatCompletionParams): Promise<IChatMessage> {
+        var client = new OpenAIClient(new OpenAIKeyCredential(this.apiKey!));
 
-        var msgs = convertToOpenAIChatMessages(messages);
+        var msg = convertToOpenAIChatMessages(params.messages);
 
-        const chatCompletion = await openai.chat.completions.create(
+        var choices = await client.getChatCompletions(
+            this.model!,
+            msg,
             {
-                model: this.model,
-                messages: msgs,
-                temperature: temperature ?? this.temperature,
-                max_tokens: maxTokens ?? this.maxTokens,
-                top_p: topP ?? this.topP,
-                presence_penalty: presencePenalty ?? this.presencePenalty,
-                frequency_penalty: frequencyPenalty ?? this.frequencyPenalty,
-                stop: stop ?? this.stop,
+                temperature: params.temperature ?? this.temperature ?? 0.7,
+                maxTokens: params.maxTokens ?? this.maxTokens ?? 64,
+                topP: params.topP ?? this.topP ?? 1,
+                presencePenalty: params.presencePenalty ?? this.presencePenalty ?? 0,
+                frequencyPenalty: params.frequencyPenalty ?? this.frequencyPenalty ?? 0,
+                stop: params.stop ?? this.stop ?? [],
+                functions: params.functions,
             }
         );
-
-        var choices = chatCompletion.choices;
-        var completion = choices[0].message;
+        
+        var replyMessage = choices.choices[0].message;
+        if (replyMessage == null){
+            throw new Error("Reply message is null");
+        }
 
         return {
-            role: completion.role,
-            content: completion.content,
+            ...replyMessage,
+            function_call: replyMessage.functionCall,
+            role: "assistant",
         } as IChatMessage;
     }
 }

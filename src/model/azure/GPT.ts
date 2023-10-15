@@ -1,5 +1,5 @@
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { IEmbeddingModel, IChatModelRecord, IChatModel } from "@/model/type";
+import { IEmbeddingModel, IChatModelRecord, IChatModel, ChatCompletionParams } from "@/model/type";
 import { IChatMessage } from "@/message/type";
 import { OpenAIClient, AzureKeyCredential } from "@azure/openai";
 import { convertToOpenAIChatMessages } from "../utils";
@@ -56,32 +56,34 @@ export class AzureGPT implements IChatModel, IAzureGPTRecord {
         this.isChatModel = true;
     }
 
-    async getChatCompletion(messages: IChatMessage[], temperature?: number | undefined, maxTokens?: number | undefined, topP?: number | undefined, presencePenalty?: number | undefined, frequencyPenalty?: number | undefined, stop?: string[] | undefined): Promise<IChatMessage> {
+    async getChatCompletion(params: ChatCompletionParams): Promise<IChatMessage> {
         var client = new OpenAIClient(this.endpoint, new AzureKeyCredential(this.apiKey));
 
-        var msg = convertToOpenAIChatMessages(messages);
+        var msg = convertToOpenAIChatMessages(params.messages);
 
         var choices = await client.getChatCompletions(
             this.deploymentID!,
             msg,
             {
-                temperature: temperature ?? this.temperature ?? 0.7,
-                maxTokens: maxTokens ?? this.maxTokens ?? 64,
-                topP: topP ?? this.topP ?? 1,
-                presencePenalty: presencePenalty ?? this.presencePenalty ?? 0,
-                frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty ?? 0,
-                stop: stop ?? this.stop ?? [],
+                temperature: params.temperature ?? this.temperature ?? 0.7,
+                maxTokens: params.maxTokens ?? this.maxTokens ?? 64,
+                topP: params.topP ?? this.topP ?? 1,
+                presencePenalty: params.presencePenalty ?? this.presencePenalty ?? 0,
+                frequencyPenalty: params.frequencyPenalty ?? this.frequencyPenalty ?? 0,
+                stop: params.stop ?? this.stop ?? [],
+                functions: params.functions,
             }
         );
         
         var replyMessage = choices.choices[0].message;
-        if (replyMessage == null){
+        if (replyMessage == null || replyMessage == undefined){
             throw new Error("Reply message is null");
         }
 
         return {
-            content: replyMessage.content,
-            role: replyMessage.role,
+            ...replyMessage,
+            function_call: replyMessage.functionCall,
+            role: 'assistant',
         } as IChatMessage;
     }
 }

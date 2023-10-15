@@ -12,6 +12,7 @@ export interface IChatMessage {
   content: string;
   name?: string;
   function_call?: IFunctionCall;
+  from?: string; // agent name
 }
 
 export interface IChatMessageRecord extends IRecord, IChatMessage{

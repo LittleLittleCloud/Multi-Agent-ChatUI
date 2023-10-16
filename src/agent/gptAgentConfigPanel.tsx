@@ -219,7 +219,7 @@ export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChange
 
 export const MarkdownMessage = (message: IZeroshotAgentMessage, onChange: (message: IZeroshotAgentMessage) => void) => {
     const prompt = message.prompt ?? "no prompt";
-    const content = message.content;
+    const content = message.content ?? "";
     const [openContent, setOpenContent] = React.useState<'markdown' | 'plain text' | 'prompt' | 'error'>("markdown");
     return (
         <Stack

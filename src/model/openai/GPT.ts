@@ -107,8 +107,6 @@ export class OpenAIGPT implements IChatModel, IOpenAIGPTRecord{
 
         return {
             ...replyMessage,
-            function_call: replyMessage.functionCall,
-            role: "assistant",
         } as IChatMessage;
     }
 }

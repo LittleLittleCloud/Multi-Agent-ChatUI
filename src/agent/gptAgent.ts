@@ -29,6 +29,7 @@ export interface IGPTAgentRecord extends IAgentRecord {
     memory?: IMemory;
     embedding?: IEmbeddingModel;
     name: string;
+    group_message?: string;
     system_message: string;
     avatar: string; // url
 };
@@ -41,6 +42,7 @@ export class GPTAgent implements IAgent, IGPTAgentRecord {
   memory?: IMemory | undefined;
   embedding?: IEmbeddingModel | undefined;
   system_message: string;
+  group_message?: string;
   avatar: string;
   function_map?: Map<FunctionDefinition, (arg: string) => Promise<string>>;
 
@@ -54,6 +56,7 @@ export class GPTAgent implements IAgent, IGPTAgentRecord {
     this.system_message = agent.system_message ?? "You are a helpful AI assistant";
     this.avatar = agent.avatar ?? "GPT";
     this.function_map = agent.function_map;
+    this.group_message = agent.group_message ?? "Hey";
   }
 
   async callAsync(messages: IChatMessage[], temperature?: number | undefined, stop_words?: string[] | undefined, max_tokens?: number | undefined): Promise<IChatMessage> {
@@ -76,27 +79,27 @@ export class GPTAgent implements IAgent, IGPTAgentRecord {
     });
     msg.from = this.name;
     // if message is a function_call, execute the function
-    if(msg.function_call != undefined && this.function_map != undefined){
+    if(msg.functionCall != undefined && this.function_map != undefined){
       var functionDefinitions = Array.from(this.function_map?.keys() ?? []);
-      var functionDefinition = functionDefinitions.find(f => f.name == msg.function_call!.name);
+      var functionDefinition = functionDefinitions.find(f => f.name == msg.functionCall!.name);
       var func = functionDefinition ? this.function_map.get(functionDefinition) : undefined;
       if(func){
         try{
-          var result = await func(msg.function_call.arguments);
+          var result = await func(msg.functionCall.arguments);
           msg.content = result;
-          msg.name = msg.function_call.name;
+          msg.name = msg.functionCall.name;
         }
         catch(e){
-          var errorMsg = `Error executing function ${msg.function_call.name}: ${e}`;
+          var errorMsg = `Error executing function ${msg.functionCall.name}: ${e}`;
           msg.content = errorMsg;
-          msg.name = msg.function_call.name;
+          msg.name = msg.functionCall.name;
         }
       }
       else{
         var availableFunctions = Array.from(this.function_map?.keys() ?? []);
-        var errorMsg = `Function ${msg.function_call.name} not found. Available functions: ${availableFunctions.map(f => f.name).join(", ")}`;
+        var errorMsg = `Function ${msg.functionCall.name} not found. Available functions: ${availableFunctions.map(f => f.name).join(", ")}`;
         msg.content = errorMsg;
-        msg.function_call = undefined;
+        msg.functionCall = undefined;
       }
 
       return msg;

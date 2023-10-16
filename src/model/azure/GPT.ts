@@ -82,8 +82,6 @@ export class AzureGPT implements IChatModel, IAzureGPTRecord {
 
         return {
             ...replyMessage,
-            function_call: replyMessage.functionCall,
-            role: 'assistant',
         } as IChatMessage;
     }
 }

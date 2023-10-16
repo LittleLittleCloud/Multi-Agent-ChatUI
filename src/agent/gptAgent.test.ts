@@ -100,7 +100,7 @@ test('gpt agent callAsync function_call test', async () => {
     } as IChatMessage;
 
     var response = await agent.callAsync([userMessage], 0);
-    expect(response.function_call?.name).toBe("say_hi");
+    expect(response.functionCall?.name).toBe("say_hi");
     expect(response.role).toBe("assistant");
     expect(response.content).toContain("[SAY_HI_FUNCTION]");
     expect(response.from).toBe("alice");

@@ -9,9 +9,9 @@ export interface IFunctionCall
 
 export interface IChatMessage {
   role: Role;
-  content: string;
+  content?: string;
   name?: string;
-  function_call?: IFunctionCall;
+  functionCall?: IFunctionCall;
   from?: string; // agent name
 }
 
@@ -24,5 +24,5 @@ export function IsUserMessage(message: IChatMessageRecord): boolean{
 }
 
 export function IsFunctionCallMessage(message: IChatMessageRecord): boolean{
-  return message.function_call !== undefined;
+  return message.functionCall !== undefined;
 }

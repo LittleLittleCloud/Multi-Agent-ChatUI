@@ -39,7 +39,7 @@ import { StorageAction } from '@/utils/app/storageReducer';
 import { IAgentRecord, IAgent } from '@/agent/type';
 import { AgentProvider } from '@/agent/agentProvider';
 import { IChatMessageRecord, IsUserMessage } from '@/message/type';
-import { MultiAgentGroup } from '@/chat/group';
+import { GroupChat } from '@/chat/group';
 import { Logger } from '@/utils/logger';
 import { Conversation } from './Conversation';
 import html2canvas from 'html2canvas';
@@ -264,7 +264,7 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
         system_message: 'a user that seeks help from agents',
         type: 'agent',
       };
-      var chat = new MultiAgentGroup(user, currentAgents, [...converstion, message]);
+      var chat = new GroupChat(user, currentAgents, [...converstion, message]);
       for(var i = 0; i < round; i++){
         setSelectSpeakerMessage(`Selecting speaker for round ${i+1}`);
         var rolePlay = await chat.selectNextSpeaker();

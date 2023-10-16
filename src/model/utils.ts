@@ -39,10 +39,10 @@ export const AVAILABLE_GPT_MODELS = [
 
 export function convertToOpenAIChatMessages(messages: IChatMessage[]): ChatCompletionMessageParam[] {
     var msgs = messages.map((message) => {
-        if (message.function_call != null){
+        if (message.functionCall != null){
             return {
                 role: 'assistant',
-                function_call: message.function_call,
+                function_call: message.functionCall,
                 content: null,
             } as ChatCompletionMessageParam
         }

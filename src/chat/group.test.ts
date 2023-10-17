@@ -1,7 +1,7 @@
 import { GroupChat } from "./group";
 import { Logger } from "@/utils/logger";
 import { AgentProvider } from "@/agent/agentProvider";
-import { IMarkdownMessage } from "@/message/MarkdownMessage";
+import { IMarkdownMessageRecord } from "@/message/MarkdownMessage";
 import { IAgentRecord } from "@/agent/type";
 import { AzureGPT, IAzureGPTRecord } from "@/model/azure/GPT";
 import { GPTAgent } from "@/agent/gptAgent";

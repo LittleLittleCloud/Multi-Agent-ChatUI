@@ -4,12 +4,11 @@ import { Stack, Divider, Box } from "@mui/material";
 import React from "react";
 import { IChatMessageRecord } from "./type";
 
-export interface IMarkdownMessage extends IChatMessageRecord {
+export interface IMarkdownMessageRecord extends IChatMessageRecord {
     type: 'message.markdown',
-    content: string,
 }
 
-export const MarkdownMessage = (message: IMarkdownMessage, onChange: (message: IMarkdownMessage) => void) => {
+export const MarkdownMessage = (message: IMarkdownMessageRecord, onChange: (message: IMarkdownMessageRecord) => void) => {
     const content = message.content;
     const [openContent, setOpenContent] = React.useState<'markdown' | 'plain text'>("markdown");
     return (
@@ -19,12 +18,12 @@ export const MarkdownMessage = (message: IMarkdownMessage, onChange: (message: I
             {
                 openContent === 'markdown' &&
                 <MemoizedReactMarkdown>
-                    {content}
+                    {content ?? ''}
                 </MemoizedReactMarkdown>
             }
             {
                 openContent === 'plain text' &&
-                <SmallLabel>{content.replace('\n', '<br />')}</SmallLabel>
+                <SmallLabel>{content?.replace('\n', '<br />')}</SmallLabel>
             }
             <Stack
                 direction="row"

@@ -1,8 +1,7 @@
-import { IGPTAgentRecord, IZeroshotAgentMessage } from './gptAgent';
+import { IGPTAgentRecord } from './gptAgent';
 import { CentralBox, EditableSavableTextField, EditableSelectField, SettingSection, SmallLabel, SmallMultipleSelectSetting, SmallSelectSetting, SmallTextSetting, SmallToggleSetting, TinyClickableLabel, TinyLabel, useEffectAsync } from '@/components/Global/EditableSavableTextField';
 import { Box, Chip, Divider, Stack, Tab, Tabs } from '@mui/material';
 import React from 'react';
-import { Markdown } from "@/components/Global/Markdown";
 import { EmbeddingProvider, LLMProvider } from "@/model/llmprovider";
 import { IChatMessageRecord } from "@/message/type";
 import { MemoryProvider } from '@/memory/memoryProvider';
@@ -216,42 +215,3 @@ export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChange
         </Box>
     )
 };
-
-export const MarkdownMessage = (message: IZeroshotAgentMessage, onChange: (message: IZeroshotAgentMessage) => void) => {
-    const prompt = message.prompt ?? "no prompt";
-    const content = message.content ?? "";
-    const [openContent, setOpenContent] = React.useState<'markdown' | 'plain text' | 'prompt' | 'error'>("markdown");
-    return (
-        <Stack
-            direction="column"
-            spacing={1}>
-            {openContent === 'markdown' &&
-                <Markdown>{content}</Markdown>
-            }
-            {
-                openContent === 'plain text' &&
-                <SmallLabel>{content.replace('\n', '<br />')}</SmallLabel>
-            }
-            {openContent === 'prompt' &&
-                <SmallLabel>{prompt}</SmallLabel>
-            }
-            <Stack
-                direction="row"
-                spacing={1}>
-                {
-                    <TinyClickableLabel
-                    onClick={() => setOpenContent('markdown')}
-                    sx = {{
-                        color: openContent == 'markdown' ? 'primary.main' : 'text.secondary',
-                    }}>content</TinyClickableLabel>
-                }
-                <Divider orientation="vertical" flexItem />
-                <TinyClickableLabel
-                    onClick={() => setOpenContent('plain text')}
-                    sx = {{
-                        color: openContent == 'plain text' ? 'primary.main' : 'text.secondary',
-                    }}>plain text</TinyClickableLabel>
-            </Stack>
-        </Stack>
-    )
-}

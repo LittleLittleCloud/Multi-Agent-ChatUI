@@ -8,11 +8,6 @@ import { IOpenAIGPTRecord } from "@/model/openai/GPT";
 import { LLMProvider } from "@/model/llmprovider";
 import { FunctionDefinition } from "@azure/openai";
 
-export interface IZeroshotAgentMessage extends IChatMessageRecord{
-  type: 'message.zeroshot',
-  prompt?: string,
-}
-
 export interface IGPTAgentRecord extends IAgentRecord {
     type: 'agent.gpt';
     llm?: IAzureGPTRecord | IOpenAIGPTRecord;

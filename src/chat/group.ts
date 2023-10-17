@@ -1,7 +1,7 @@
 import { IAgent, IAgentRecord } from "@/agent/type";
 import { UserProxyAgent } from "@/agent/userProxyAgent";
 import { IGroup, IGroupRecord } from "@/chat/type";
-import { IMarkdownMessage } from "@/message/MarkdownMessage";
+import { IMarkdownMessageRecord } from "@/message/MarkdownMessage";
 import { IChatMessageRecord, IsUserMessage } from "@/message/type";
 import { IChatModel, IChatModelRecord } from "@/model/type";
 import { Logger } from "@/utils/logger";

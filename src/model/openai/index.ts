@@ -1,12 +1,18 @@
-import { GPT, IGPT, ITextDavinci003, TextDavinci003 } from "./GPT";
+import { OpenAIGPT, IOpenAIGPTRecord, ITextDavinci003 } from "./GPT";
 import { ModelConfig } from "./ModelConfig";
 import { LLMProvider } from "../llmprovider";
 
-LLMProvider.registerProvider<IGPT>(
+LLMProvider.registerProvider<IOpenAIGPTRecord>(
     "openai.gpt",
-    (model) => new GPT(model as IGPT ),
-    (model, onConfigChange) => ModelConfig(model, (model) => onConfigChange(model as IGPT)),
-    {
+    (model) => {
+        var rc = new OpenAIGPT(
+            { ...model, isChatModel: true, isStreaming: true, type: "openai.gpt" }
+        );
+
+        return new OpenAIGPT(rc);
+    },
+    (model, onConfigChange) => ModelConfig(model, (model) => onConfigChange(model)),
+    new OpenAIGPT({
         type: "openai.gpt",
         maxTokens: 64,
         temperature: 0.7,
@@ -16,4 +22,4 @@ LLMProvider.registerProvider<IGPT>(
         isChatModel: true,
         isStreaming: true,
         model: "gpt-3.5-turbo",
-    } as IGPT);
+    }));

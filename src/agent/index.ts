@@ -1,16 +1,36 @@
-import { IChatAgent, IZeroshotAgentMessage, initializeChatAgentExecutor } from "./chatAgent";
-import { ChatAgentConfigPanel, MarkdownMessage } from "./chatAgentConfigPanel";
+import {IGPTAgentRecord, IZeroshotAgentMessage, initializeGPTAgent } from "./gptAgent";
+import { GPTAgentConfigPanel, MarkdownMessage } from "./gptAgentConfigPanel";
 import { AgentProvider } from "./agentProvider";
 
+// register gptAgent
 AgentProvider.registerProvider(
-            "agent.chat",
-            (agent) => initializeChatAgentExecutor(agent as IChatAgent),
-            (agent, onConfigChange) => ChatAgentConfigPanel(agent as IChatAgent, onConfigChange),
+            "agent.gpt",
+            (agent) => {
+                if (agent.type != "agent.gpt") {
+                    throw new Error("Invalid agent type");
+                } else {
+                    const gpt_record: IGPTAgentRecord = {
+                        ...agent,
+                        type: "agent.gpt",
+                    };
+
+                    return initializeGPTAgent(gpt_record);
+                }
+            },
+            (agent, onConfigChange) => {
+                if (agent.type != "agent.gpt") {
+                    throw new Error("Invalid agent type");
+                }
+
+                var gpt_record: IGPTAgentRecord = {
+                    ...agent,
+                    type: "agent.gpt",
+                };
+
+                return GPTAgentConfigPanel(gpt_record, onConfigChange);
+            },
             {
-                type: "agent.chat",
-                prefixPrompt: "you are a chatbot in a chat room. Try to be helpful and friendly.",
-                suffixPrompt: `Your response:`,
-                useMarkdown: true,
-                includeHistory: true,
-                includeName: true,
-            } as IChatAgent);
+                type: "agent.gpt",
+                name: "GPT Agent",
+                system_message: "you are a helpful ai assistant",
+            } as IGPTAgentRecord);

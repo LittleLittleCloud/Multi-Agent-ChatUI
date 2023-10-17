@@ -1,8 +1,8 @@
-import { IMessage } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 import { ChatMemory } from "./chatMemory";
 
 test('ChatMemory can parse history using ChatML', async () => {
-    var chatHistory: IMessage[] = [
+    var chatHistory: IChatMessageRecord[] = [
         {from: "user", content: "hello", type: "message.plainText"},
         {from: "assistant", content: "hi", type: "message.plainText"},
         {from: "user", content: "how are you?", type: "message.plainText"},
@@ -27,7 +27,7 @@ I'm fine
 })
 
 test('ChatMemory can parse history using plain text', async () => {
-    var chatHistory: IMessage[] = [
+    var chatHistory: IChatMessageRecord[] = [
         {from: "user", content: "hello", type: "message.plainText"},
         {from: "assistant", content: "hi", type: "message.plainText"},
         {from: "user", content: "how are you?", type: "message.plainText"},

@@ -2,9 +2,9 @@ import { SmallLabel, TinyClickableLabel, TinyLabel } from "@/components/Global/E
 import { MemoizedReactMarkdown } from "@/components/Markdown/MemoizedReactMarkdown";
 import { Stack, Divider, Box } from "@mui/material";
 import React from "react";
-import { IMessage } from "./type";
+import { IChatMessageRecord } from "./type";
 
-export interface IMarkdownMessage extends IMessage {
+export interface IMarkdownMessage extends IChatMessageRecord {
     type: 'message.markdown',
     content: string,
 }

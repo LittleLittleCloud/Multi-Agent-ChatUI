@@ -1,5 +1,5 @@
 import { Folder } from '@/types/folder';
-import { IStorage, exportZip } from '@/types/storage';
+import { IStorageRecord, exportZip } from '@/types/storage';
 
 function currentDate() {
   const date = new Date();
@@ -8,7 +8,7 @@ function currentDate() {
   return `${month}-${day}`;
 }
 
-export const exportData = async (storage: IStorage) => {
+export const exportData = async (storage: IStorageRecord) => {
   const blob = await exportZip(storage);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

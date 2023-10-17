@@ -17,16 +17,18 @@ import { Box, Button, ButtonGroup, Stack, TextField, ToggleButton, ToggleButtonG
 import { CentralBox, Label, SmallClickableLabel, SmallLabel, SmallTextButton, TinyLabel, TinyTextButton } from '../Global/EditableSavableTextField';
 import { Markdown } from '../Global/Markdown';
 import { ChatBlobStorage, ImageBlobStorage } from '@/utils/blobStorage';
-import { IMessage } from '@/message/type';
+import { IChatMessageRecord } from '@/message/type';
 
 interface Props {
   messageIsStreaming: boolean;
-  onSend: (message: IMessage) => void;
+  onSend: (message: IChatMessageRecord) => void;
+  onClearChatHistory: () => void;
 }
 
 export const ChatInput: FC<Props> = ({
   messageIsStreaming,
   onSend,
+  onClearChatHistory,
 }) => {
   const { t } = useTranslation('chat');
 
@@ -71,12 +73,16 @@ export const ChatInput: FC<Props> = ({
       return;
     }
     var now = Date.now();
-    onSend({ from: 'Human', content, type: 'message.markdown', timestamp: now });
+    onSend({ role: 'user', from: 'Human', content, type: 'message.markdown', timestamp: now });
     setContent('');
 
     if (window.innerWidth < 640 && textareaRef && textareaRef.current) {
       textareaRef.current.blur();
     }
+  };
+
+  const handleClearChatHistory = () => {
+    onClearChatHistory();
   };
 
   const isMobile = () => {
@@ -160,7 +166,7 @@ export const ChatInput: FC<Props> = ({
       let allowedFileTypes = ['image', 'text'];
       let allowedExtensions = ['csv', 'tsv', 'json', 'txt', 'pdf'];
       let fileType = file.type.split('/')[0];
-      let fileExtension = file.name.split('.').pop();
+      let fileExtension = file.name.split('.')?.pop() ?? '';
       if (!allowedFileTypes.includes(fileType) && !allowedExtensions.includes(fileExtension)) {
         alert('File type not supported, please upload an image or text file');
         return;
@@ -308,7 +314,6 @@ export const ChatInput: FC<Props> = ({
                 overflow: 'scroll'
               }}>
               <Markdown
-                height="10%"
               >{content ?? "nothing to preview"}</Markdown>
             </Box>
           }
@@ -356,6 +361,10 @@ export const ChatInput: FC<Props> = ({
 
               <ButtonGroup
                 size='small'>
+                <TinyTextButton
+                  onClick={handleClearChatHistory}>
+                    Clear chat history
+                </TinyTextButton>
                 <TinyTextButton
                   onClick={handleSend}>
                     Send

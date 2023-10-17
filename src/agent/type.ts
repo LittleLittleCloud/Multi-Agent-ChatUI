@@ -1,18 +1,19 @@
-import { Callbacks } from "langchain/callbacks";
 import { IRecord } from "@/types/storage";
-import { IMessage } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 
-export interface IAgent extends IRecord{
-    alias: string,
-    description: string,
+export interface IAgentRecord extends IRecord{
+    name: string,
+    system_message: string,
     avatar: string,
 }
+export interface AgentCallParams{
+    messages: IChatMessageRecord[],
+    maxTokens?: number,
+    temperature?: number,
+    stopWords?: string[],
+}
+export interface IAgent{
+    name: string;
 
-// MAP: multi-agent protocol
-export interface IAgentExecutor{
-    rolePlay(messages: IMessage[], agents: IAgent[]): Promise<IMessage>;
-
-    describleRole(chatHistory: IMessage[]): Promise<string>;
-
-    selectNextRole(messages: IMessage[], agents: {alias: string, description: string}[]): Promise<number>;
+    callAsync(params: AgentCallParams): Promise<IChatMessageRecord>;
 }

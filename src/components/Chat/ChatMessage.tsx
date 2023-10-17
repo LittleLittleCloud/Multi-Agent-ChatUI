@@ -12,15 +12,15 @@ import { SmallAvatar, SmallLabel, TinyAvatar, TinyLabel } from '../Global/Editab
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { IMessage, IsUserMessage } from '@/message/type';
-import { IAgent } from '@/agent/type';
+import { IChatMessageRecord, IsUserMessage } from '@/message/type';
+import { IAgentRecord } from '@/agent/type';
 import { MessageProvider } from '@/message/messageProvider';
 
 interface Props {
-  message: IMessage;
-  agent?: IAgent;
-  onDeleteMessage?: (message: IMessage) => void;
-  onResendMessage?: (message: IMessage) => void;
+  message: IChatMessageRecord;
+  agent?: IAgentRecord;
+  onDeleteMessage?: (message: IChatMessageRecord) => void;
+  onResendMessage?: (message: IChatMessageRecord) => void;
 }
 
 export const ChatMessage: FC<Props> = memo(
@@ -43,7 +43,7 @@ export const ChatMessage: FC<Props> = memo(
       });
     };
 
-    const MessageElement = (props: { message: IMessage, onchange: (agent: IMessage) => void}) => {
+    const MessageElement = (props: { message: IChatMessageRecord, onchange: (agent: IChatMessageRecord) => void}) => {
       if(!MessageProvider.hasProvider(props.message.type)){
           return <SmallLabel>{props.message.content.toString()}</SmallLabel>
       }
@@ -155,7 +155,7 @@ export const ChatMessage: FC<Props> = memo(
                 sx={{
                   overflow: 'scroll',
                 }}>
-                <MessageElement message={message} onchange={(message: IMessage) => {}} />
+                <MessageElement message={message} onchange={(message: IChatMessageRecord) => {}} />
               </Box>
               </Stack>
             </Box>

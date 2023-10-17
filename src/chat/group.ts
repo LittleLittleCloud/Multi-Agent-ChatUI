@@ -1,101 +1,214 @@
-import { AgentProvider } from "@/agent/agentProvider";
-import { IAgent } from "@/agent/type";
-import { IGroup } from "@/chat/type";
+import { IAgent, IAgentRecord } from "@/agent/type";
+import { UserProxyAgent } from "@/agent/userProxyAgent";
+import { IGroup, IGroupRecord } from "@/chat/type";
 import { IMarkdownMessage } from "@/message/MarkdownMessage";
-import { IMessage, IsUserMessage } from "@/message/type";
+import { IChatMessageRecord, IsUserMessage } from "@/message/type";
+import { IChatModel, IChatModelRecord } from "@/model/type";
 import { Logger } from "@/utils/logger";
+import { content } from "html2canvas/dist/types/css/property-descriptors/content";
 
-export class MultiAgentGroup{
-    user: IAgent;
-
-    system: IAgent = {
-        type: 'agent.chat',
-        alias: "System",
-        description: "determine when to terminate the conversation",
-    } as IAgent;
-
-    public ASK_USER_MESSAGE: IMessage;
-
-    TERMINATE_MESSAGE: IMarkdownMessage = {
-        from: this.system.alias,
-        content: "// terminate the conversation",
-        type: 'message.markdown',
-    };
-
-    public agents: IAgent[];
-    public conversation: IMessage[];
+export class GroupChat implements IGroup {
+    name: string;
+    llm: IChatModel;
+    agents: IAgent[];
+    admin: IAgent;
+    initial_conversation: IChatMessageRecord[];
+    terminate_message_prefix: string = "[GROUP_TERMINATE]";
+    clear_message_prefix: string = "[GROUP_CLEAR]";
+    end_of_message_token = "<eof_msg>";
+    messageHandler?: (message: IChatMessageRecord) => void;
     
     constructor(
-        user: IAgent,
+        name: string,
+        llm: IChatModel,
         agents: IAgent[],
-        conversation: IMessage[],
-        max_round: number = 10,){
-        this.agents = agents;
-        this.conversation = conversation;
-        this.user = user;
-        this.ASK_USER_MESSAGE = {
-            from: this.user.alias,
-            content: "// ask user for his response",
-            type: 'message.markdown',
-        };
+        admin: IAgent,
+        messageHandler?: (message: IChatMessageRecord) => void,
+    ){
+        this.name = name;
+        this.llm = llm;
+        this.agents = [
+            ...agents,
+            admin,
+        ]
+        this.admin = admin;
+        this.initial_conversation = [];
+        this.messageHandler = messageHandler;
     }
 
-    public async getRoleDescription(): Promise<{alias: string, description: string}[]>{
-        var agent_list = [...this.agents];
-        var descriptions: {alias: string, description: string}[] = [];
-        for(var agent of agent_list){
-            var agentExecutor = AgentProvider.getProvider(agent)(agent);
-            var description = await agentExecutor.describleRole(this.conversation);
-            descriptions.push({
-                alias: agent.alias,
-                description: description,
+    addInitialConversation(message: string, from: IAgent){
+        // check if from is in agents
+        if (this.agents.find((agent) => agent.name.toLowerCase() == from.name.toLowerCase()) == undefined){
+            throw new Error(`Agent ${from.name} is not in the group`);
+        }
+
+        this.initial_conversation.push({
+            role: "user",
+            content: message,
+            from: from.name,
+        } as IChatMessageRecord);
+    }
+
+    async callAsync(messages: IChatMessageRecord[], max_round?: number | undefined): Promise<IChatMessageRecord[]> {
+        if (max_round === undefined){
+            max_round = 10;
+        }
+
+        for (var i = 0; i < max_round; i++){
+            var nextSpeaker = await this.selectNextSpeakerAsync(messages) ?? this.admin;
+            if (nextSpeaker instanceof UserProxyAgent){
+                break;
+            }
+
+            var conversation = await this.processConversationsForAgentAsync(nextSpeaker, this.initial_conversation, messages);
+            var nextMessage = await nextSpeaker.callAsync({
+                messages: conversation,
+                stopWords: [this.end_of_message_token],
             });
+            messages.push(nextMessage);
+            if (this.messageHandler){
+                this.messageHandler(nextMessage);
+            }
+            if (this.isGroupChatTerminateMessage(nextMessage)){
+                break;
+            }
         }
 
-        return descriptions;
+        return messages;
     }
 
-    public async selectNextSpeaker(): Promise<IAgent>{
-        var agents = [...this.agents, this.user];
-        var first_agent = agents[0];
-        var agentProvider = AgentProvider.getProvider(first_agent)(first_agent);
-        var selectedAgentIndex = await agentProvider.selectNextRole(this.conversation, agents);
-        if (selectedAgentIndex >= 0){
-            return agents[selectedAgentIndex];
+    async selectNextSpeakerAsync(chatHistory: IChatMessageRecord[]): Promise<IAgent | undefined>{
+        var agentNames = this.agents.map((agent) => agent.name.toLowerCase());
+        var rolePlayMessage = {
+            role: "system",
+            content: `You are in a role play game. Carefully read the conversation history and carry on the conversation.
+-Available roles-
+${agentNames.join("\n")}
+-End of roles-
+
+Each message will start with 'From name:', e.g:
+From admin:
+//your message//.`
+        } as IChatMessageRecord;
+
+        var conversation = await this.processConversationsForRolePlayAsync(this.initial_conversation, chatHistory);
+        conversation = [
+            rolePlayMessage,
+            ...conversation
+        ];
+
+        var response = await this.llm.getChatCompletion(
+            {
+                messages: conversation,
+                temperature: 0,
+                maxTokens: 64,
+                stop: [":"],
+            }
+        )
+
+        // fromName: From xxx
+        try{
+            var fromName = response.content;
+            var name = fromName?.substring(fromName.indexOf("From") + 5).trim();
+            var agent = this.agents.find((agent) => agent.name.toLowerCase() == name?.toLowerCase());
+
+            return agent;
         }
-        else{
-            Logger.debug(`no agent selected, return user`);
-            return this.user;
+        catch(e){
+            return undefined;
         }
     }
 
-    public pushMessage(message: IMessage){
-        this.conversation.push(message);
+    async processConversationsForAgentAsync(agent: IAgent, initializeMessages: IChatMessageRecord[], conversation: IChatMessageRecord[]): Promise<IChatMessageRecord[]>{
+        var messagesToKeep = await this.messagesToKeepAsync(conversation);
+        var conversationToKeep = [
+            ...initializeMessages,
+            ...messagesToKeep
+        ];
+        var messagesForAgent = []
+        for (var i = 0; i < conversationToKeep.length; i++){
+            var message = conversationToKeep[i];
+            if (message.from?.toLowerCase() != agent.name.toLowerCase()){
+                var messageToAdd = {
+                    role: "user",
+                    content: `${message.content}
+${this.end_of_message_token}
+From ${message.from}
+round # ${i}`,
+                } as IChatMessageRecord;
+                messagesForAgent.push(messageToAdd);
+            }
+            else{
+                if(message.functionCall != undefined){
+                    var functionCallMessage = {
+                        role: "assistant",
+                        content: undefined,
+                        functionCall: message.functionCall,
+                    } as IChatMessageRecord;
+
+                    messagesForAgent.push(functionCallMessage);
+
+                    var functionResultMessage = {
+                        role: 'function',
+                        content: message.content,
+                        name: message.name,
+                    } as IChatMessageRecord;
+
+                    messagesForAgent.push(functionResultMessage);
+                }
+                else{
+                    var messageToAdd = {
+                        role: "assistant",
+                        content: `${message.content}
+${this.end_of_message_token}
+round # ${i}`,
+                    } as IChatMessageRecord;
+                    messagesForAgent.push(messageToAdd);
+                }
+            }
+        }
+
+        return messagesForAgent;
     }
 
-    public async rolePlay(message: IMessage): Promise<IMessage>{
-        this.pushMessage(message);
-        var rolePlay = await this.selectNextSpeaker();
-        if (rolePlay.alias == this.user.alias){
-            return this.ASK_USER_MESSAGE;
-        }
+    async processConversationsForRolePlayAsync(initialMessages: IChatMessageRecord[], conversation: IChatMessageRecord[]): Promise<IChatMessageRecord[]>{
+        var conversationToKeep = await this.messagesToKeepAsync(conversation);
+        conversationToKeep = [
+            ...initialMessages,
+            ...conversationToKeep
+        ];
 
-        var agentExecutor = AgentProvider.getProvider(rolePlay)(rolePlay);
-        var response = await agentExecutor.rolePlay(this.conversation, [...this.agents, this.user]);
-        return response;
+        return conversationToKeep.map((message, i, _) => ({
+            role: "user",
+            content: `From ${message.from}:
+${message.content}
+${this.end_of_message_token}
+round # ${i}`,
+        } as IChatMessageRecord));
     }
 
-    public async rolePlayWithMaxRound(message: IMessage, max_round: number): Promise<IMessage>{
-        if (max_round <= 0){
-            return this.TERMINATE_MESSAGE;
+    async messagesToKeepAsync(chatHistory: IChatMessageRecord[]): Promise<IChatMessageRecord[]>{
+        var lastClearMessageIndex = chatHistory.findLastIndex((message) => this.isGroupChatClearMessage(message));
+
+        if (chatHistory.filter((message) => this.isGroupChatTerminateMessage(message)).length > 1){
+            lastClearMessageIndex = chatHistory.slice(0, lastClearMessageIndex - 1).findLastIndex((message) => this.isGroupChatClearMessage(message));
+            chatHistory = chatHistory.slice(lastClearMessageIndex + 1);
         }
 
-        var response = await this.rolePlay(message);
+        lastClearMessageIndex = chatHistory.findLastIndex((message) => this.isGroupChatClearMessage(message));
 
-        if (response.from == this.user.alias || response.from == this.system.alias){
-            return response;
+        if (lastClearMessageIndex != -1 && chatHistory.length - 1 > lastClearMessageIndex){
+            chatHistory = chatHistory.slice(lastClearMessageIndex + 1);
         }
 
-        return await this.rolePlayWithMaxRound(response, max_round - 1);
+        return chatHistory;
+    }
+
+    isGroupChatTerminateMessage( message: IChatMessageRecord): boolean{
+        return message.content?.includes(this.terminate_message_prefix) ?? false;
+    }
+
+    isGroupChatClearMessage( message: IChatMessageRecord): boolean{
+        return message.content?.includes(this.clear_message_prefix) ?? false;
     }
 }

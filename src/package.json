@@ -1,6 +1,6 @@
 {
   "name": "llm-chat",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@azure/openai": "^1.0.0-beta.6",
     "@dqbd/tiktoken": "^1.0.7",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
@@ -29,7 +30,7 @@
     "next": "13.2.4",
     "next-i18next": "^13.3.0",
     "next-remove-imports": "^1.0.11",
-    "openai": "^3.3.0",
+    "openai": "^4.12.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-i18next": "^12.3.1",

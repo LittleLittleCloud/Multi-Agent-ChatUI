@@ -5,7 +5,7 @@ import { IMarkdownMessage } from "@/message/MarkdownMessage";
 import { IAgentRecord } from "@/agent/type";
 import { AzureGPT, IAzureGPTRecord } from "@/model/azure/GPT";
 import { GPTAgent } from "@/agent/gptAgent";
-import { IChatMessage, IChatMessageRecord } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 
 test('multi-agent response test', async () => {
     const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
@@ -48,7 +48,7 @@ test('multi-agent response test', async () => {
         from: alice.name,
         role: 'user',
         content: 'hello bob',
-    } as IChatMessage;
+    } as IChatMessageRecord;
     var nextMessages = await groupChat.callAsync([nextMessage], 1);
     expect(nextMessages.length).toBe(2);
     expect(nextMessages[0].from).toBe(alice.name);

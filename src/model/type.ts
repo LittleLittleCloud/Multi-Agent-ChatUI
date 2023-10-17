@@ -1,4 +1,4 @@
-import { IChatMessage, IFunctionCall } from "@/message/type";
+import { IChatMessageRecord, IFunctionCall } from "@/message/type";
 import { IRecord } from "@/types/storage";
 import { FunctionDefinition } from "@azure/openai";
 
@@ -15,7 +15,7 @@ export interface IChatModelRecord extends IModel{
 }
 
 export interface ChatCompletionParams{
-    messages: IChatMessage[],
+    messages: IChatMessageRecord[],
     temperature?: number,
     maxTokens?: number,
     topP?: number,
@@ -26,5 +26,5 @@ export interface ChatCompletionParams{
 }
 
 export interface IChatModel{
-    getChatCompletion(messages: ChatCompletionParams): Promise<IChatMessage>;
+    getChatCompletion(messages: ChatCompletionParams): Promise<IChatMessageRecord>;
 }

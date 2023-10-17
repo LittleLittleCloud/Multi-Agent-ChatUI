@@ -1,8 +1,8 @@
+import { IChatMessageRecord } from "@/message/type";
 import { IRecord } from "@/types/storage";
-import { IMessage } from "@/types/chat";
 
-export interface IGroup extends IRecord{
+export interface IGroupRecord extends IRecord{
     name: string,
     agents: string[],
-    conversation: IMessage[],
+    conversation: IChatMessageRecord[],
 }

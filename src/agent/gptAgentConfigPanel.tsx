@@ -8,7 +8,7 @@ import { IChatMessageRecord } from "@/message/type";
 import { MemoryProvider } from '@/memory/memoryProvider';
 import { IEmbeddingModel, IChatModelRecord, IModel } from '@/model/type';
 import { IMemory } from '@/memory/type';
-import { AzureGPT } from "@/model/azure/GPT";
+import { AzureGPT, IAzureGPTRecord } from "@/model/azure/GPT";
 import { IOpenAIGPTRecord, OpenAIGPT } from "@/model/openai/GPT";
 
 var globalTabIndex = 0;
@@ -23,9 +23,15 @@ export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChange
     const availableLLMModels = LLMProvider.getAvailableModels();
     const availableMemories = MemoryProvider.getAvailableModels();
     const availableEmbeddingModels = EmbeddingProvider.getAvailableModels();
-    const LLMSettingPanel = (props: {model: IChatModelRecord, onChange: (model: IChatModelRecord) => void}) => {
+    const LLMSettingPanel = (props: {model: IAzureGPTRecord | IOpenAIGPTRecord, onChange: (model: IAzureGPTRecord | IOpenAIGPTRecord) => void}) => {
         if(selectedLLMModelID != undefined && LLMProvider.hasProvider(selectedLLMModelID)){
-            return LLMProvider.getConfigUIProvider(selectedLLMModelID)(props.model, (model: IModel) => props.onChange(model as IChatModelRecord));
+            if (selectedLLMModelID == 'azure.gpt') {
+                return LLMProvider.getConfigUIProvider(selectedLLMModelID)(props.model, (model) => props.onChange(model as IAzureGPTRecord));
+            }
+
+            if (selectedLLMModelID == 'openai.gpt') {
+                return LLMProvider.getConfigUIProvider(selectedLLMModelID)(props.model, (model) => props.onChange(model as IOpenAIGPTRecord));
+            }
         }
         return <></>;
     }
@@ -155,14 +161,8 @@ export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChange
                                 throw new Error("llm model not supported");
                             }
                         }}/>
-                        {selectedLLMModelID && llm != undefined && (llm instanceof AzureGPT || llm instanceof OpenAIGPT) &&
-                            <LLMSettingPanel model={llm} onChange={(model) => {
-                                if (model instanceof AzureGPT || model instanceof OpenAIGPT) {
-                                    onAgentConfigChanged({...agent, llm: model});
-                                } else {
-                                    throw new Error("llm model not supported");
-                                }
-                            }}/>
+                        {selectedLLMModelID && llm != undefined &&
+                            <LLMSettingPanel model={llm} onChange={(model) => onAgentConfigChanged({...agent, llm: model})}/>
                         }
                     </SettingSection>
             </TabPanel>

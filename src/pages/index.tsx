@@ -1,26 +1,5 @@
 import { Chat } from '@/components/Chat/Chat';
-import { Chatbar } from '@/components/Chatbar/Chatbar';
-import { Navbar } from '@/components/Mobile/Navbar';
-import { Promptbar } from '@/components/Promptbar/Promptbar';
-import { Message } from '@/types/chat';
-import { KeyValuePair } from '@/types/data';
-import { ErrorMessage } from '@/types/error';
-import { Folder, FolderType } from '@/types/folder';
-import { OpenAIModel, OpenAIModelID, OpenAIModels } from '@/types/openai';
-import { Prompt } from '@/types/prompt';
-import CropFreeIcon from '@mui/icons-material/CropFree';
-import {
-  cleanConversationHistory,
-  cleanSelectedConversation,
-} from '@/utils/app/clean';
-import { DEFAULT_SYSTEM_PROMPT } from '@/utils/app/const';
-import {
-  saveConversation,
-  saveConversations,
-  updateConversation,
-} from '@/utils/app/conversation';
-import { saveFolders } from '@/utils/app/folders';
-import { exportData, importData } from '@/utils/app/importExport';
+import { exportData } from '@/utils/app/importExport';
 import { savePrompts } from '@/utils/app/prompts';
 import { AppBar, Button, Toolbar, Typography, Box, createTheme, Divider, Stack, Tooltip, IconButton, Avatar, Menu, MenuItem, Chip, CssBaseline, FormControlLabel, Switch, Fab } from '@mui/material';
 import { IconArrowBarLeft, IconArrowBarRight } from '@tabler/icons-react';
@@ -30,28 +9,19 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import Models, { IModelConfig } from '../components/Model/model';
 import { ThemeProvider } from '@emotion/react';
-import { IModel } from '@/types/model';
-import { BaseLLM, LLM } from "langchain/dist/llms/base";
-import { GPT_35_TURBO, TextDavinci003 } from '@/model/azure/GPT';
 import '@/utils/app/setup';
 import { AgentPage } from '@/components/Agent/agent';
-import { IStorage, importZip } from '@/types/storage';
+import { IStorageRecord, importZip } from '@/types/storage';
 import SettingsIcon from '@mui/icons-material/Settings';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { groupReducer } from '@/utils/app/groupReducer';
-import { IAgent } from '@/types/agent';
-import { agentReducer } from '@/utils/app/agentReducer';
 import getConfig from 'next/config';
 import { storageReducer } from '@/utils/app/storageReducer';
 import { Label, LargeClickableLabel, LargeLabel, SmallClickableLabel, SmallLabel, SmallTextButton } from '@/components/Global/EditableSavableTextField';
-import html2canvas from 'html2canvas';
-import { Logger } from '@/utils/logger';
 
 const { publicRuntimeConfig } = getConfig();
-const Home: React.FC<IStorage> = () => {
+const Home: React.FC<IStorageRecord> = () => {
   const { t } = useTranslation('chat');
   const [hasChange, setHasChange] = useState<boolean>(false);
   // STATE ----------------------------------------------
@@ -59,7 +29,7 @@ const Home: React.FC<IStorage> = () => {
     const newStorage = storageReducer(storage, action);
     setHasChange(true);
     return newStorage;
-  }, {type: 'storage', agents: [], groups: []} as IStorage);
+  }, {type: 'storage', agents: [], groups: []} as IStorageRecord);
 
   const availableGroups = storage.groups;
   const availableAgents = storage.agents;
@@ -102,7 +72,7 @@ const Home: React.FC<IStorage> = () => {
     const reader = new FileReader();
     reader.onload = async (event) => {
 
-      const data: IStorage = await importZip(new Blob([event.target?.result!]));
+      const data: IStorageRecord = await importZip(new Blob([event.target?.result!]));
       console.log(data);
       storageDispatcher({ type: 'set', payload: data });
       setIsMenuOpen(false);
@@ -262,8 +232,8 @@ const Home: React.FC<IStorage> = () => {
         {selectedTab == 'Chat' &&
         <>
           <Chat
-            groups={availableGroups}
-            agents={availableAgents}
+            groupRecords={availableGroups}
+            agentRecords={availableAgents}
             storageDispatcher={storageDispatcher}/>
         </>
         }

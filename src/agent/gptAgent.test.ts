@@ -1,9 +1,10 @@
 import { IOpenAIGPTRecord } from "@/model/openai/GPT";
-import { IChatMessage, IChatMessageRecord } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 import { Logger } from "@/utils/logger";
 import { AzureGPT, IAzureGPTRecord } from "@/model/azure/GPT";
 import { GPTAgent, IGPTAgentRecord } from "./gptAgent";
 import { FunctionDefinition } from "@azure/openai";
+import { LLMProvider } from "@/model/llmprovider";
 
 test('gpt agent callAsync test', async () => {
     const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
@@ -24,6 +25,8 @@ test('gpt agent callAsync test', async () => {
         } as IAzureGPTRecord,
     );
 
+    expect(LLMProvider.getDefaultValue("azure.gpt") instanceof AzureGPT).toBe(true);
+
     var agent = new GPTAgent(
         {
             name: "alice",
@@ -37,9 +40,12 @@ hello world`,
     var userMessage = {
         role: 'user',
         content: 'hello',
-    } as IChatMessage;
+    } as IChatMessageRecord;
 
-    var response = await agent.callAsync([userMessage], 0);
+    var response = await agent.callAsync({
+        messages: [userMessage],
+        temperature: 0,
+    });
 
     expect(response.content).toBe("hello world");
 })
@@ -97,9 +103,12 @@ test('gpt agent callAsync function_call test', async () => {
     var userMessage = {
         role: 'user',
         content: 'hi I am you dad',
-    } as IChatMessage;
+    } as IChatMessageRecord;
 
-    var response = await agent.callAsync([userMessage], 0);
+    var response = await agent.callAsync({
+        messages: [userMessage],
+        temperature: 0,
+    });
     expect(response.functionCall?.name).toBe("say_hi");
     expect(response.role).toBe("assistant");
     expect(response.content).toContain("[SAY_HI_FUNCTION]");

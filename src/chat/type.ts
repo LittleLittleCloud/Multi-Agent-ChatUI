@@ -1,6 +1,4 @@
-import { IAgent, IAgentRecord } from "@/agent/type";
-import { IChatMessage, IChatMessageRecord } from "@/message/type";
-import { IChatModelRecord } from "@/model/type";
+import { IChatMessageRecord } from "@/message/type";
 import { IRecord } from "@/types/storage";
 
 export interface IGroupRecord extends IRecord{
@@ -13,6 +11,6 @@ export interface IGroup{
     name: string;
 
     callAsync(
-        messages: IChatMessage[],
-        max_round?: number) : Promise<IChatMessage[]>;
+        messages: IChatMessageRecord[],
+        max_round?: number) : Promise<IChatMessageRecord[]>;
 }

@@ -1,8 +1,9 @@
 import { ChatCompletionParams, IChatModel, IChatModelRecord } from "../type";
-import { IChatMessage } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { convertToOpenAIChatMessages } from "../utils";
 import { OpenAIClient, OpenAIKeyCredential } from "@azure/openai";
+import { IMarkdownMessage } from "@/message/MarkdownMessage";
 
 export interface IOpenAIModel extends IChatModelRecord
 {
@@ -29,28 +30,6 @@ export interface IOpenAIGPTRecord extends IOpenAIModel{
     isStreaming: true;
     isChatModel: true;
 }
-
-// export class TextDavinci003 extends OpenAI{
-//     type: string;
-//     constructor(fields: ITextDavinci003){
-//         super({
-//             temperature: fields.temperature ?? 0.7,
-//             topP: fields.topP ?? 1,
-//             presencePenalty: fields.presencePenalty ?? 0,
-//             frequencyPenalty: fields.frequencyPenalty ?? 0,
-//             stop: fields.stop,
-//             streaming: fields.isStreaming ?? false,
-//             openAIApiKey: fields.apiKey,
-//             modelName: fields.model,
-//         })
-
-//         this.type = fields.type ?? "openai.text-davinci-003";
-//     }
-
-//     _llmType(): string {
-//         return this.type;
-//     }
-// }
 
 export class OpenAIGPT implements IChatModel, IOpenAIGPTRecord{
     type: "openai.gpt";
@@ -81,7 +60,7 @@ export class OpenAIGPT implements IChatModel, IOpenAIGPTRecord{
         this.stop = fields.stop ?? [];
     }
 
-    async getChatCompletion(params: ChatCompletionParams): Promise<IChatMessage> {
+    async getChatCompletion(params: ChatCompletionParams): Promise<IChatMessageRecord> {
         var client = new OpenAIClient(new OpenAIKeyCredential(this.apiKey!));
 
         var msg = convertToOpenAIChatMessages(params.messages);
@@ -107,6 +86,7 @@ export class OpenAIGPT implements IChatModel, IOpenAIGPTRecord{
 
         return {
             ...replyMessage,
-        } as IChatMessage;
+            type: 'message.markdown',
+        } as IMarkdownMessage;
     }
 }

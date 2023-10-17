@@ -1,8 +1,9 @@
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { IEmbeddingModel, IChatModelRecord, IChatModel, ChatCompletionParams } from "@/model/type";
-import { IChatMessage } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 import { OpenAIClient, AzureKeyCredential } from "@azure/openai";
 import { convertToOpenAIChatMessages } from "../utils";
+import { IMarkdownMessage } from "@/message/MarkdownMessage";
 
 // azure openai gpt parameters
 export interface IGPTBaseModelConfiguration extends IChatModelRecord {
@@ -56,7 +57,7 @@ export class AzureGPT implements IChatModel, IAzureGPTRecord {
         this.isChatModel = true;
     }
 
-    async getChatCompletion(params: ChatCompletionParams): Promise<IChatMessage> {
+    async getChatCompletion(params: ChatCompletionParams): Promise<IChatMessageRecord> {
         var client = new OpenAIClient(this.endpoint, new AzureKeyCredential(this.apiKey));
 
         var msg = convertToOpenAIChatMessages(params.messages);
@@ -82,7 +83,8 @@ export class AzureGPT implements IChatModel, IAzureGPTRecord {
 
         return {
             ...replyMessage,
-        } as IChatMessage;
+            type: 'message.markdown',
+        } as IMarkdownMessage;
     }
 }
 

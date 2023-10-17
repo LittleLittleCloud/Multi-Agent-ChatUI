@@ -1,9 +1,9 @@
-import { IGroup } from '@/types/group';
+import { IGroupRecord } from '@/types/group';
 import {useReducer} from 'react';
 
 export type GroupCmd = "add" | "remove" | "update" | "addOrUpdate";
-export type GroupAction = {type: GroupCmd, payload: IGroup, original?: IGroup};
-export function groupReducer(groups : IGroup[], action: GroupAction){
+export type GroupAction = {type: GroupCmd, payload: IGroupRecord, original?: IGroupRecord};
+export function groupReducer(groups : IGroupRecord[], action: GroupAction){
     switch(action.type){
         case "add":
             if(groups.find(g => g.name === action.payload.name)){

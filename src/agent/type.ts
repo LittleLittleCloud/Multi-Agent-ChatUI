@@ -1,18 +1,19 @@
 import { IRecord } from "@/types/storage";
-import { IChatMessage } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 
 export interface IAgentRecord extends IRecord{
     name: string,
     system_message: string,
     avatar: string,
 }
-
+export interface AgentCallParams{
+    messages: IChatMessageRecord[],
+    maxTokens?: number,
+    temperature?: number,
+    stopWords?: string[],
+}
 export interface IAgent{
     name: string;
-    
-    callAsync(
-        messages: IChatMessage[],
-        temperature?: number,
-        stop_words?: string[],
-        max_tokens?: number): Promise<IChatMessage>;
+
+    callAsync(params: AgentCallParams): Promise<IChatMessageRecord>;
 }

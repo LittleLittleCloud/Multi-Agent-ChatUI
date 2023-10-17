@@ -19,21 +19,13 @@ import {
 import { renderToStaticMarkup } from "react-dom/server"
 import { Spinner, ThreeDotBouncingLoader } from '../Global/Spinner';
 import { ChatInput } from './ChatInput';
-import { ChatLoader } from './ChatLoader';
-import { ChatMessage } from './ChatMessage';
-import { ErrorMessageDiv } from './ErrorMessageDiv';
-import { ModelSelect } from './ModelSelect';
-import { SystemPrompt } from './SystemPrompt';
 import { Alert, Avatar, Box, Button, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, IconButton, List, ListItem, ListItemButton, ListItemAvatar, ListItemText, Menu, MenuItem, Paper, Stack, Typography, AvatarGroup, Fab, Tooltip, Modal, ThemeProvider, createTheme, Grid } from '@mui/material';
-import { AgentExecutor } from 'langchain/agents';
-import { IRecord } from '@/types/storage';
 import { CentralBox, EditableSavableTextField, EditableSelectField, LargeLabel, SelectableListItem, SmallAvatar, SmallLabel, SmallMultipleSelectField, SmallSelectField, SmallTextButton, SmallTextField, TinyAvatar } from '../Global/EditableSavableTextField';
-import SettingsIcon from '@mui/icons-material/Settings';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CropFreeIcon from '@mui/icons-material/CropFree';
 import { DeleteConfirmationDialog } from '../Global/DeleteConfirmationDialog';
 import { GroupAction, GroupCmd, groupReducer } from '@/utils/app/groupReducer';
-import { IGroup } from '@/types/group';
+import { IGroupRecord } from '@/types/group';
 import { Console, groupEnd } from 'console';
 import { StorageAction } from '@/utils/app/storageReducer';
 import { IAgentRecord, IAgent } from '@/agent/type';
@@ -43,9 +35,11 @@ import { GroupChat } from '@/chat/group';
 import { Logger } from '@/utils/logger';
 import { Conversation } from './Conversation';
 import html2canvas from 'html2canvas';
-import { VariableModal } from './VariableModal';
+import { UserProxyAgent } from '@/agent/userProxyAgent';
+import { GPTAgent } from '@/agent/gptAgent';
+import { LLMProvider } from '@/model/llmprovider';
 
-const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroup, agents: IAgentRecord[], onSaved: (group: IGroup) => void, onCancel: () => void}> = ({open, group, agents, onSaved, onCancel}) => {
+const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroupRecord, agents: IAgentRecord[], onSaved: (group: IGroupRecord) => void, onCancel: () => void}> = ({open, group, agents, onSaved, onCancel}) => {
   const [groupName, setGroupName] = useState(group?.name);
   const [selectAgents, setSelectAgents] = useState(group?.agents ?? []); // [agentId]
   const [savable, setSavable] = useState<boolean>(false); // [agentId]
@@ -60,7 +54,7 @@ const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroup, agents: IAgent
       onSaved({...group, name: groupName!, agents: selectAgents!});
     }
     else{
-      onSaved({name: groupName!, agents: selectAgents!, type: 'group', conversation: []} as IGroup);
+      onSaved({name: groupName!, agents: selectAgents!, type: 'group', conversation: []} as IGroupRecord);
     }
   };
 
@@ -88,12 +82,12 @@ const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroup, agents: IAgent
     </Dialog>);
 };
 
-const GroupPanel: FC<{groups: IGroup[], agents: IAgentRecord[], onGroupSelected: (group?: IGroup) => void, storageDispatcher: Dispatch<StorageAction>}> = ({groups, agents, onGroupSelected, storageDispatcher}) => {
+const GroupPanel: FC<{groups: IGroupRecord[], agents: IAgentRecord[], onGroupSelected: (group?: IGroupRecord) => void, storageDispatcher: Dispatch<StorageAction>}> = ({groups, agents, onGroupSelected, storageDispatcher}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [groupToDelete, setGroupToDelete] = useState<IGroup | null>(null);
-  const [groupToEdit, setGroupToEdit] = useState<IGroup>();
+  const [groupToDelete, setGroupToDelete] = useState<IGroupRecord | null>(null);
+  const [groupToEdit, setGroupToEdit] = useState<IGroupRecord>();
   const [openUpdateGroupDialog, setOpenUpdateGroupDialog] = useState<boolean>(false);
-  const [selectedGroup, setSelectedGroup] = useState<IGroup | undefined>(undefined);
+  const [selectedGroup, setSelectedGroup] = useState<IGroupRecord | undefined>(undefined);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -103,18 +97,18 @@ const GroupPanel: FC<{groups: IGroup[], agents: IAgentRecord[], onGroupSelected:
     setAnchorEl(null);
   };
 
-  const handleGroupSelected = (group?: IGroup) => {
+  const handleGroupSelected = (group?: IGroupRecord) => {
     setSelectedGroup(group);
     onGroupSelected(group);
   }
   
-  const onClickDeleteGroup = (group: IGroup) => {
+  const onClickDeleteGroup = (group: IGroupRecord) => {
     handleClose();
     console.log('delete group', group);
     setGroupToDelete(group);
   }
 
-  const onClickEditGroup = (group: IGroup) => {
+  const onClickEditGroup = (group: IGroupRecord) => {
     handleClose();
     setGroupToEdit(group);
     setOpenUpdateGroupDialog(true);
@@ -128,7 +122,7 @@ const GroupPanel: FC<{groups: IGroup[], agents: IAgentRecord[], onGroupSelected:
     setGroupToDelete(null);
   }
 
-  const onEditGroupHandler = (group: IGroup) => {
+  const onEditGroupHandler = (group: IGroupRecord) => {
     handleClose();
     setOpenUpdateGroupDialog(false);
     storageDispatcher({type: 'updateGroup', payload: group, original: groupToEdit!});
@@ -222,14 +216,14 @@ const GroupPanel: FC<{groups: IGroup[], agents: IAgentRecord[], onGroupSelected:
   )
 }
 
-export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatcher: Dispatch<StorageAction>}> =
+export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[], storageDispatcher: Dispatch<StorageAction>}> =
   ({
-    groups,
-    agents,
+    groupRecords,
+    agentRecords,
     storageDispatcher,
   }) => {
     const { t } = useTranslation('chat');
-    const [currentGroup, setCurrentGroup] = useState<IGroup>();
+    const [currentGroup, setCurrentGroup] = useState<IGroupRecord>();
     const [currentConversation, setCurrentConversation] = useState<IChatMessageRecord[]>();
     const [newMessage, setNewMessage] = useState<IChatMessageRecord>();
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -244,50 +238,35 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
       setCurrentConversation(currentGroup?.conversation);
     }, [currentGroup]);
 
-    useEffect(() => {
-      if(newMessage){
-        var newConversation = [...currentConversation!, newMessage];
-        setCurrentConversation(newConversation);
-      }
-    }, [newMessage]);
+    const addNewMessageToConversationHandler = (message: IChatMessageRecord) => {
+      setCurrentConversation(prev => [...prev!, message]);
+    }
 
     useEffect(() => {
-      storageDispatcher({type: 'updateGroup', payload: {...currentGroup!, conversation: currentConversation}})
+      storageDispatcher({type: 'updateGroup', payload: {...currentGroup!, conversation: currentConversation ?? []}})
     }, [currentConversation]);
 
-    const newMessageHandler = async (message: IChatMessageRecord, converstion: IChatMessageRecord[], round: number = 5) => {
-      setNewMessage(message);
-      var currentAgents = agents.filter(agent => currentGroup?.agents.includes(agent.name));
-      var user: IAgentRecord = {
-        name: 'Human',
-        avatar: 'You',
-        system_message: 'a user that seeks help from agents',
-        type: 'agent',
-      };
-      var chat = new GroupChat(user, currentAgents, [...converstion, message]);
-      for(var i = 0; i < round; i++){
-        setSelectSpeakerMessage(`Selecting speaker for round ${i+1}`);
-        var rolePlay = await chat.selectNextSpeaker();
-        if (rolePlay.name == chat.user.name){
-          setSelectSpeakerMessage('no speaker is selected, please continue the conversation');
-          return;
-        }
-        try{
-          setRespondingAgentAlias(rolePlay.name);
-          var agentExecutor = AgentProvider.getProvider(rolePlay)(rolePlay);
-          var response = await agentExecutor.rolePlay(chat.conversation, currentAgents);
-          chat.pushMessage(response);
-          setNewMessage(response);
-        }
-        catch(e){
-        }
-        finally{
-          setRespondingAgentAlias(undefined);
-          setSelectSpeakerMessage(undefined);
-        }
+    const startGroupChatHandler = async (converstion: IChatMessageRecord[], round: number = 20) => {
+      if(currentGroup == undefined){
+        return;
+      }
+      Logger.log('start group chatting');
+      var currentAgentRecords = agentRecords.filter(agent => currentGroup?.agents.includes(agent.name));
+      var currentAgents = currentAgentRecords.map(agent => AgentProvider.getProvider(agent)(agent));
+      var firstGPTAgents = currentAgents.filter(agent => agent instanceof GPTAgent)[0] as GPTAgent | undefined;
+      var llmToUse = firstGPTAgents?.llm;
+      if(llmToUse == undefined){
+        throw new Error('No GPT agent available');
+      }
+      var llmModel = LLMProvider.getProvider(llmToUse)(llmToUse);
+      var userAgent = new UserProxyAgent("You");
+      var chat = new GroupChat(currentGroup.name, llmModel, currentAgents, userAgent, addNewMessageToConversationHandler);
+      chat.addInitialConversation("Hey, welcome to the group chat", userAgent);
+      for(let agent of currentAgents){
+        chat.addInitialConversation("Hey", agent)
       }
 
-      setSelectSpeakerMessage('max round reached, please continue the conversation');
+      await chat.callAsync(converstion, round);
     }
 
     const onClearChatHistory = () => {
@@ -296,7 +275,7 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
       }
     }
 
-    const onHandleCreateGroup = (group: IGroup) => {
+    const onHandleCreateGroup = (group: IGroupRecord) => {
       // first check if the group already exists
       try{
         storageDispatcher({type: 'addGroup', payload: group});
@@ -309,14 +288,14 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
       setOpenCreateGroupDialog(false);
     }
 
-    const onHandleSelectGroup = (group?: IGroup) => {
+    const onHandleSelectGroup = (group?: IGroupRecord) => {
       if(group == undefined){
         setCurrentGroup(undefined);
         setCurrentConversation(undefined);
 
         return;
       }
-      group.agents = group.agents.filter(agent => agents.find(a => a.name === agent));
+      group.agents = group.agents.filter(agent => agentRecords.find(a => a.name === agent));
       setCurrentGroup(group);
       setCurrentConversation(group.conversation);
     };
@@ -351,20 +330,21 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
       currentConversation!.splice(index, 1);
       setCurrentConversation(currentConversation!);
       storageDispatcher({type: 'updateGroup', payload: {...currentGroup!, conversation: currentConversation!}})
-      await newMessageHandler(resendMessage, currentConversation!);
+      addNewMessageToConversationHandler(resendMessage);
+      await startGroupChatHandler(currentConversation!);
     }
 
-    if (currentConversation == undefined && groups?.length == 0){
+    if (currentConversation == undefined && groupRecords?.length == 0){
       return (
         <CentralBox
               sx={{
                 width: "100%",
                 height: "100%",
               }}>
-                {agents?.length == 0 &&
+                {agentRecords?.length == 0 &&
                 <LargeLabel>No agent available, create agent first please</LargeLabel>
                 }
-                {agents && agents.length > 0 &&
+                {agentRecords && agentRecords.length > 0 &&
                 <>
                 <Button
                   onClick={() => setOpenCreateGroupDialog(true)}
@@ -382,7 +362,7 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
                 </Button>
                 <CreateOrEditGroupDialog
                   open={openCreateGroupDialog}
-                  agents={agents}
+                  agents={agentRecords}
                   onCancel={() => setOpenCreateGroupDialog(false)}
                   onSaved={onHandleCreateGroup} />
                 </>
@@ -400,10 +380,10 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
         }}>
         <CreateOrEditGroupDialog
           open={openCreateGroupDialog}
-          agents={agents}
+          agents={agentRecords}
           onCancel={() => setOpenCreateGroupDialog(false)}
           onSaved={onHandleCreateGroup} />
-        {groups?.length > 0 &&
+        {groupRecords?.length > 0 &&
           <Grid
             item
             xs={2.5}
@@ -419,8 +399,8 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
                 flexGrow: 1,
               }}>
               <GroupPanel
-                groups={groups}
-                agents={agents}
+                groups={groupRecords}
+                agents={agentRecords}
                 onGroupSelected={onHandleSelectGroup}
                 storageDispatcher={storageDispatcher}/>
             </Box>
@@ -448,7 +428,7 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
               }}>
                 <Conversation
                   conversation={currentConversation}
-                  agents={agents}
+                  agents={agentRecords}
                   onResendMessage={onResendMessage}
                   onDeleteMessage={onDeleteMessage} />
                 
@@ -499,11 +479,12 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
                   </SmallLabel>
                 </Stack>}
                 <ChatInput
-                    textareaRef={textareaRef}
                     messageIsStreaming={false}
                     onClearChatHistory={onClearChatHistory}
                     onSend={async (message) => {
-                      await newMessageHandler(message, currentConversation!);
+                      addNewMessageToConversationHandler(message);
+                      var updatedConversation = [...currentConversation??[], message];
+                      await startGroupChatHandler(updatedConversation);
                     }} />
               
             </Box>}
@@ -518,7 +499,6 @@ export const Chat: FC<{groups: IGroup[], agents: IAgentRecord[], storageDispatch
           </CentralBox>
             }
         </Grid>
-        
       </Grid>
     );
   };

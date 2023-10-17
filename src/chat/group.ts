@@ -1,8 +1,8 @@
-import { AgentProvider } from "@/agent/agentProvider";
 import { IAgent, IAgentRecord } from "@/agent/type";
+import { UserProxyAgent } from "@/agent/userProxyAgent";
 import { IGroup, IGroupRecord } from "@/chat/type";
 import { IMarkdownMessage } from "@/message/MarkdownMessage";
-import { IChatMessage, IChatMessageRecord, IsUserMessage } from "@/message/type";
+import { IChatMessageRecord, IsUserMessage } from "@/message/type";
 import { IChatModel, IChatModelRecord } from "@/model/type";
 import { Logger } from "@/utils/logger";
 import { content } from "html2canvas/dist/types/css/property-descriptors/content";
@@ -12,17 +12,18 @@ export class GroupChat implements IGroup {
     llm: IChatModel;
     agents: IAgent[];
     admin: IAgent;
-    initial_conversation: IChatMessage[];
+    initial_conversation: IChatMessageRecord[];
     terminate_message_prefix: string = "[GROUP_TERMINATE]";
     clear_message_prefix: string = "[GROUP_CLEAR]";
     end_of_message_token = "<eof_msg>";
-    
+    messageHandler?: (message: IChatMessageRecord) => void;
     
     constructor(
         name: string,
         llm: IChatModel,
         agents: IAgent[],
         admin: IAgent,
+        messageHandler?: (message: IChatMessageRecord) => void,
     ){
         this.name = name;
         this.llm = llm;
@@ -32,6 +33,7 @@ export class GroupChat implements IGroup {
         ]
         this.admin = admin;
         this.initial_conversation = [];
+        this.messageHandler = messageHandler;
     }
 
     addInitialConversation(message: string, from: IAgent){
@@ -39,24 +41,34 @@ export class GroupChat implements IGroup {
         if (this.agents.find((agent) => agent.name.toLowerCase() == from.name.toLowerCase()) == undefined){
             throw new Error(`Agent ${from.name} is not in the group`);
         }
-        
+
         this.initial_conversation.push({
             role: "user",
             content: message,
             from: from.name,
-        } as IChatMessage);
+        } as IChatMessageRecord);
     }
 
-    async callAsync(messages: IChatMessage[], max_round?: number | undefined): Promise<IChatMessage[]> {
+    async callAsync(messages: IChatMessageRecord[], max_round?: number | undefined): Promise<IChatMessageRecord[]> {
         if (max_round === undefined){
             max_round = 10;
         }
 
         for (var i = 0; i < max_round; i++){
             var nextSpeaker = await this.selectNextSpeakerAsync(messages) ?? this.admin;
+            if (nextSpeaker instanceof UserProxyAgent){
+                break;
+            }
+
             var conversation = await this.processConversationsForAgentAsync(nextSpeaker, this.initial_conversation, messages);
-            var nextMessage = await nextSpeaker.callAsync(conversation, undefined, [this.end_of_message_token], undefined);
+            var nextMessage = await nextSpeaker.callAsync({
+                messages: conversation,
+                stopWords: [this.end_of_message_token],
+            });
             messages.push(nextMessage);
+            if (this.messageHandler){
+                this.messageHandler(nextMessage);
+            }
             if (this.isGroupChatTerminateMessage(nextMessage)){
                 break;
             }
@@ -65,7 +77,7 @@ export class GroupChat implements IGroup {
         return messages;
     }
 
-    async selectNextSpeakerAsync(chatHistory: IChatMessage[]): Promise<IAgent | undefined>{
+    async selectNextSpeakerAsync(chatHistory: IChatMessageRecord[]): Promise<IAgent | undefined>{
         var agentNames = this.agents.map((agent) => agent.name.toLowerCase());
         var rolePlayMessage = {
             role: "system",
@@ -77,7 +89,7 @@ ${agentNames.join("\n")}
 Each message will start with 'From name:', e.g:
 From admin:
 //your message//.`
-        } as IChatMessage;
+        } as IChatMessageRecord;
 
         var conversation = await this.processConversationsForRolePlayAsync(this.initial_conversation, chatHistory);
         conversation = [
@@ -107,7 +119,7 @@ From admin:
         }
     }
 
-    async processConversationsForAgentAsync(agent: IAgent, initializeMessages: IChatMessage[], conversation: IChatMessage[]): Promise<IChatMessage[]>{
+    async processConversationsForAgentAsync(agent: IAgent, initializeMessages: IChatMessageRecord[], conversation: IChatMessageRecord[]): Promise<IChatMessageRecord[]>{
         var messagesToKeep = await this.messagesToKeepAsync(conversation);
         var conversationToKeep = [
             ...initializeMessages,
@@ -115,7 +127,7 @@ From admin:
         ];
         var messagesForAgent = []
         for (var i = 0; i < conversationToKeep.length; i++){
-            var message = conversationToKeep[1];
+            var message = conversationToKeep[i];
             if (message.from?.toLowerCase() != agent.name.toLowerCase()){
                 var messageToAdd = {
                     role: "user",
@@ -123,7 +135,7 @@ From admin:
 ${this.end_of_message_token}
 From ${message.from}
 round # ${i}`,
-                } as IChatMessage;
+                } as IChatMessageRecord;
                 messagesForAgent.push(messageToAdd);
             }
             else{
@@ -132,7 +144,7 @@ round # ${i}`,
                         role: "assistant",
                         content: undefined,
                         functionCall: message.functionCall,
-                    } as IChatMessage;
+                    } as IChatMessageRecord;
 
                     messagesForAgent.push(functionCallMessage);
 
@@ -140,7 +152,7 @@ round # ${i}`,
                         role: 'function',
                         content: message.content,
                         name: message.name,
-                    } as IChatMessage;
+                    } as IChatMessageRecord;
 
                     messagesForAgent.push(functionResultMessage);
                 }
@@ -150,7 +162,7 @@ round # ${i}`,
                         content: `${message.content}
 ${this.end_of_message_token}
 round # ${i}`,
-                    } as IChatMessage;
+                    } as IChatMessageRecord;
                     messagesForAgent.push(messageToAdd);
                 }
             }
@@ -159,7 +171,7 @@ round # ${i}`,
         return messagesForAgent;
     }
 
-    async processConversationsForRolePlayAsync(initialMessages: IChatMessage[], conversation: IChatMessage[]): Promise<IChatMessage[]>{
+    async processConversationsForRolePlayAsync(initialMessages: IChatMessageRecord[], conversation: IChatMessageRecord[]): Promise<IChatMessageRecord[]>{
         var conversationToKeep = await this.messagesToKeepAsync(conversation);
         conversationToKeep = [
             ...initialMessages,
@@ -172,10 +184,10 @@ round # ${i}`,
 ${message.content}
 ${this.end_of_message_token}
 round # ${i}`,
-        } as IChatMessage));
+        } as IChatMessageRecord));
     }
 
-    async messagesToKeepAsync(chatHistory: IChatMessage[]): Promise<IChatMessage[]>{
+    async messagesToKeepAsync(chatHistory: IChatMessageRecord[]): Promise<IChatMessageRecord[]>{
         var lastClearMessageIndex = chatHistory.findLastIndex((message) => this.isGroupChatClearMessage(message));
 
         if (chatHistory.filter((message) => this.isGroupChatTerminateMessage(message)).length > 1){
@@ -192,11 +204,11 @@ round # ${i}`,
         return chatHistory;
     }
 
-    isGroupChatTerminateMessage( message: IChatMessage): boolean{
+    isGroupChatTerminateMessage( message: IChatMessageRecord): boolean{
         return message.content?.includes(this.terminate_message_prefix) ?? false;
     }
 
-    isGroupChatClearMessage( message: IChatMessage): boolean{
+    isGroupChatClearMessage( message: IChatMessageRecord): boolean{
         return message.content?.includes(this.clear_message_prefix) ?? false;
     }
 }

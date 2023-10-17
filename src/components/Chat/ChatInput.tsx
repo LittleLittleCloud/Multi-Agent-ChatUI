@@ -73,7 +73,7 @@ export const ChatInput: FC<Props> = ({
       return;
     }
     var now = Date.now();
-    onSend({ from: 'Human', content, type: 'message.markdown', timestamp: now });
+    onSend({ role: 'user', from: 'Human', content, type: 'message.markdown', timestamp: now });
     setContent('');
 
     if (window.innerWidth < 640 && textareaRef && textareaRef.current) {
@@ -166,7 +166,7 @@ export const ChatInput: FC<Props> = ({
       let allowedFileTypes = ['image', 'text'];
       let allowedExtensions = ['csv', 'tsv', 'json', 'txt', 'pdf'];
       let fileType = file.type.split('/')[0];
-      let fileExtension = file.name.split('.').pop();
+      let fileExtension = file.name.split('.')?.pop() ?? '';
       if (!allowedFileTypes.includes(fileType) && !allowedExtensions.includes(fileExtension)) {
         alert('File type not supported, please upload an image or text file');
         return;
@@ -314,7 +314,6 @@ export const ChatInput: FC<Props> = ({
                 overflow: 'scroll'
               }}>
               <Markdown
-                height="10%"
               >{content ?? "nothing to preview"}</Markdown>
             </Box>
           }

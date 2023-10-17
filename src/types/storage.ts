@@ -1,7 +1,7 @@
-import { IGroup } from '@/types/group';
+import { IGroupRecord } from '@/types/group';
 import JSZip from 'jszip';
 import { ChatBlobStorage, ImageBlobStorage } from '@/utils/blobStorage';
-import { IAgent } from '@/agent/type';
+import { IAgent, IAgentRecord } from '@/agent/type';
 
 export interface IUISettings extends IRecord{
 }
@@ -11,16 +11,16 @@ export interface IRecord{
   type: string;
 }
 
-export interface IStorage extends IRecord{
-  agents: IAgent[];
-  groups: IGroup[];
+export interface IStorageRecord extends IRecord{
+  agents: IAgentRecord[];
+  groups: IGroupRecord[];
 }
 
-export function saveStorage(storage: IStorage){
+export function saveStorage(storage: IStorageRecord){
   localStorage.setItem('storage', JSON.stringify(storage));
 }
 
-export function loadStorage(): IStorage{
+export function loadStorage(): IStorageRecord{
   var storage = localStorage.getItem('storage');
   if(storage){
     return JSON.parse(storage);
@@ -32,7 +32,7 @@ export function loadStorage(): IStorage{
   };
 }
 
-export async function exportZip(storage: IStorage): Promise<Blob>{
+export async function exportZip(storage: IStorageRecord): Promise<Blob>{
   var zip = new JSZip();
   zip.file("storage.json", JSON.stringify(storage));
 
@@ -57,7 +57,7 @@ export async function exportZip(storage: IStorage): Promise<Blob>{
   return await zip.generateAsync({type:"blob"});
 }
 
-export async function importZip(blob: Blob): Promise<IStorage>{
+export async function importZip(blob: Blob): Promise<IStorageRecord>{
   var zip = await JSZip.loadAsync(blob);
   var storage = await zip.file("storage.json")!.async("string");
   var imageStorage = await ImageBlobStorage;

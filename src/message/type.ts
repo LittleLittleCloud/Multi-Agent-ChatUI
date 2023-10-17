@@ -7,16 +7,13 @@ export interface IFunctionCall
   arguments: string;
 }
 
-export interface IChatMessage {
+export interface IChatMessageRecord extends IRecord {
   role: Role;
   content?: string;
   name?: string;
   functionCall?: IFunctionCall;
   from?: string; // agent name
-}
-
-export interface IChatMessageRecord extends IRecord, IChatMessage{
-  timestamp?: number,
+  timestamp?: number;
 }
 
 export function IsUserMessage(message: IChatMessageRecord): boolean{

@@ -1,15 +1,5 @@
-import { Agent, ChatAgent, ZeroShotAgent, AgentExecutor, LLMSingleActionAgent, AgentActionOutputParser } from "langchain/agents";
-import { ConversationChain } from "langchain/chains";
-import {BaseLLM, LLM} from "langchain/llms/base";
-import { ChatMemory, IChatMemory } from "../memory/chatMemory";
-import { AgentAction, AgentFinish, AgentStep, BaseChatMessage, ChatMessage, HumanChatMessage, InputValues, PartialValues, SystemChatMessage } from "langchain/schema";
-import { BasePromptTemplate, BaseStringPromptTemplate, SerializedBasePromptTemplate, renderTemplate } from "langchain/prompts";
-import { RecordMap } from "@/utils/app/recordProvider";
-import { LLMChain } from "langchain";
-import { CallbackManager, Callbacks, ConsoleCallbackHandler, LangChainTracer } from "langchain/callbacks";
-import { Tool } from "langchain/tools";
-import { IAgentRecord, IAgent } from "./type";
-import { IChatMessage, IChatMessageRecord } from "@/message/type";
+import { IAgentRecord, IAgent, AgentCallParams } from "./type";
+import { IChatMessageRecord } from "@/message/type";
 import { IEmbeddingModel, IChatModelRecord } from "@/model/type";
 import { IMemory } from "@/memory/type";
 import { Logger } from "@/utils/logger";
@@ -59,7 +49,7 @@ export class GPTAgent implements IAgent, IGPTAgentRecord {
     this.group_message = agent.group_message ?? "Hey";
   }
 
-  async callAsync(messages: IChatMessage[], temperature?: number | undefined, stop_words?: string[] | undefined, max_tokens?: number | undefined): Promise<IChatMessage> {
+  async callAsync(params: AgentCallParams): Promise<IChatMessageRecord> {
     var llmRecord = this.llm;
     if (!llmRecord) {
       throw new Error("No llm provided");
@@ -67,14 +57,14 @@ export class GPTAgent implements IAgent, IGPTAgentRecord {
     var system_msg = {
       role: "system",
       content: `Your name is ${this.name}, ${this.system_message}`,
-    } as IChatMessage;
+    } as IChatMessageRecord;
     var llmProvider = LLMProvider.getProvider(llmRecord);
     var llm = llmProvider(llmRecord);
     var msg = await llm.getChatCompletion({
-      messages: [system_msg, ...messages],
-      temperature: temperature,
-      maxTokens: max_tokens,
-      stop: stop_words,
+      messages: [system_msg, ...params.messages],
+      temperature: params.temperature,
+      maxTokens: params.maxTokens,
+      stop: params.stopWords,
       functions: this.function_map ? Array.from(this.function_map.keys()) : undefined,
     });
     msg.from = this.name;

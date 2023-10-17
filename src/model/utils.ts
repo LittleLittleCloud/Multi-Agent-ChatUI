@@ -1,4 +1,4 @@
-import { IChatMessage } from "@/message/type";
+import { IChatMessageRecord } from "@/message/type";
 import { ChatCompletionMessageParam } from "openai/resources";
 
 export function getGPTMaxTokenLimit(modelType: string): number{
@@ -37,7 +37,7 @@ export const AVAILABLE_GPT_MODELS = [
     "gpt-4-32k-0314",
 ];
 
-export function convertToOpenAIChatMessages(messages: IChatMessage[]): ChatCompletionMessageParam[] {
+export function convertToOpenAIChatMessages(messages: IChatMessageRecord[]): ChatCompletionMessageParam[] {
     var msgs = messages.map((message) => {
         if (message.functionCall != null){
             return {

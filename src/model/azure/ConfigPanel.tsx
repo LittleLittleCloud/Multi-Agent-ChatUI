@@ -17,7 +17,7 @@ const GPTConfig = (model: IAzureGPTRecord, onModelConfigChanged: (model: IAzureG
         <>
             <SmallTextSetting name="api key" value={model.apiKey} onChange={(value) => onModelConfigChanged({ ...model, apiKey: value})}/>
             <SmallTextSetting name="deployment" value={model.deploymentID} onChange={(value) => onModelConfigChanged({ ...model, deploymentID: value})}/>
-            <SmallTextSetting name="resource name" value={model.endpoint} onChange={(value) => onModelConfigChanged({ ...model, endpoint: value})}/>
+            <SmallTextSetting name="endpoint" value={model.endpoint} onChange={(value) => onModelConfigChanged({ ...model, endpoint: value})}/>
             <SmallSelectSetting name="model" value={modelType} options={AVAILABLE_GPT_MODELS} onChange={(value) => setModelType(value)}/>
             <SmallNumberSetting name="max token" value={model.maxTokens} min={0} max={maxToken} step={1} onChange={(value) => onModelConfigChanged({ ...model, maxTokens: value})}/>
             <SmallNumberSetting name="temperature" value={model.temperature} min={0} max={2} step={0.01} onChange={(value) => onModelConfigChanged({ ...model, temperature: value})}/>

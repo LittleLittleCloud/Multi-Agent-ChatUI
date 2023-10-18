@@ -1,4 +1,4 @@
 import { Provider } from "@/utils/app/provider";
-import { IChatMessageRecord } from "./type";
+import { IMessageRecord } from "./type";
 
-export const MessageProvider = new Provider<IChatMessageRecord, (config: IChatMessageRecord) => IChatMessageRecord >();
+export const MessageProvider = new Provider<IMessageRecord, (config: IMessageRecord) => IMessageRecord>();

@@ -3,7 +3,7 @@ import { IEmbeddingModel, IChatModelRecord, IChatModel, ChatCompletionParams } f
 import { IChatMessageRecord } from "@/message/type";
 import { OpenAIClient, AzureKeyCredential } from "@azure/openai";
 import { convertToOpenAIChatMessages } from "../utils";
-import { IMarkdownMessage } from "@/message/MarkdownMessage";
+import { IMarkdownMessageRecord } from "@/message/MarkdownMessage";
 
 // azure openai gpt parameters
 export interface IGPTBaseModelConfiguration extends IChatModelRecord {
@@ -84,7 +84,7 @@ export class AzureGPT implements IChatModel, IAzureGPTRecord {
         return {
             ...replyMessage,
             type: 'message.markdown',
-        } as IMarkdownMessage;
+        } as IMarkdownMessageRecord;
     }
 }
 

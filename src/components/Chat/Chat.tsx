@@ -20,7 +20,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { Spinner, ThreeDotBouncingLoader } from '../Global/Spinner';
 import { ChatInput } from './ChatInput';
 import { Alert, Avatar, Box, Button, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, IconButton, List, ListItem, ListItemButton, ListItemAvatar, ListItemText, Menu, MenuItem, Paper, Stack, Typography, AvatarGroup, Fab, Tooltip, Modal, ThemeProvider, createTheme, Grid } from '@mui/material';
-import { CentralBox, EditableSavableTextField, EditableSelectField, LargeLabel, SelectableListItem, SmallAvatar, SmallLabel, SmallMultipleSelectField, SmallSelectField, SmallTextButton, SmallTextField, TinyAvatar } from '../Global/EditableSavableTextField';
+import { CentralBox, EditableSavableTextField, EditableSelectField, LargeLabel, SelectableListItem, SmallAvatar, SmallLabel, SmallMultipleSelectField, SmallSelectField, SmallTextButton, SmallTextField, TinyAvatar, TinyLabel } from '../Global/EditableSavableTextField';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CropFreeIcon from '@mui/icons-material/CropFree';
 import { DeleteConfirmationDialog } from '../Global/DeleteConfirmationDialog';
@@ -30,7 +30,7 @@ import { Console, groupEnd } from 'console';
 import { StorageAction } from '@/utils/app/storageReducer';
 import { IAgentRecord, IAgent } from '@/agent/type';
 import { AgentProvider } from '@/agent/agentProvider';
-import { IChatMessageRecord, IsUserMessage } from '@/message/type';
+import { IChatMessageRecord, IMessageRecord, IsChatMessage, IsUserMessage } from '@/message/type';
 import { GroupChat } from '@/chat/group';
 import { Logger } from '@/utils/logger';
 import { Conversation } from './Conversation';
@@ -224,8 +224,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
   }) => {
     const { t } = useTranslation('chat');
     const [currentGroup, setCurrentGroup] = useState<IGroupRecord>();
-    const [currentConversation, setCurrentConversation] = useState<IChatMessageRecord[]>();
-    const [newMessage, setNewMessage] = useState<IChatMessageRecord>();
+    const [currentConversation, setCurrentConversation] = useState<IMessageRecord[]>();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     // const [availableGroups, setAvailableGroups] = useState<IGroup[]>(groups);
@@ -234,12 +233,32 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
     const [selectSpeakerMessage, setSelectSpeakerMessage] = useState<string|undefined>(undefined);
     const [conversationOverflowY, setConversationOverflowY] = useState<"visible" | "scroll">("scroll");
     const chatRef = useRef(null);
+    const [selectSpeakerResolver, setSelectSpeakerResolver] = useState<{availableAgents?: IAgent[], prompt?: string, resolvedAgent?: (agent?: IAgent) => void}>({});
     useEffect(() => {
       setCurrentConversation(currentGroup?.conversation);
     }, [currentGroup]);
 
-    const addNewMessageToConversationHandler = (message: IChatMessageRecord) => {
+    const addNewMessageToConversationHandler = async (message: IMessageRecord) => {
       setCurrentConversation(prev => [...prev!, message]);
+    }
+
+    const reselectSpeakerHandler = async (agents: IAgent[], prompt?: string) => {
+      setSelectSpeakerResolver(prev => {
+        return {}
+      })
+
+      const promiseSomething = new Promise<IAgent|undefined>((resolve) => {
+        setSelectSpeakerResolver(_ => {
+          return {
+            resolvedAgent: resolve,
+            availableAgents: agents,
+            prompt: prompt,
+          }
+        })
+      });
+
+      var selectedAgent = await promiseSomething;
+      return selectedAgent;
     }
 
     useEffect(() => {
@@ -260,7 +279,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
       }
       var llmModel = LLMProvider.getProvider(llmToUse)(llmToUse);
       var userAgent = new UserProxyAgent("You");
-      var chat = new GroupChat(currentGroup.name, llmModel, currentAgents, userAgent, addNewMessageToConversationHandler);
+      var chat = new GroupChat(currentGroup.name, llmModel, currentAgents, userAgent, addNewMessageToConversationHandler, reselectSpeakerHandler);
       chat.addInitialConversation("Hey, welcome to the group chat", userAgent);
       for(let agent of currentAgents){
         chat.addInitialConversation("Hey", agent)
@@ -331,7 +350,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
       setCurrentConversation(currentConversation!);
       storageDispatcher({type: 'updateGroup', payload: {...currentGroup!, conversation: currentConversation!}})
       addNewMessageToConversationHandler(resendMessage);
-      await startGroupChatHandler(currentConversation!);
+      await startGroupChatHandler(currentConversation?.filter(m => IsChatMessage(m)) as IChatMessageRecord[]);
     }
 
     if (currentConversation == undefined && groupRecords?.length == 0){
@@ -447,44 +466,53 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
                 </IconButton>
                 </Tooltip>
               </Fab> */}
-
+          
           {currentGroup &&
             <Box
               sx={{
-                margin:2,
+                marginLeft: 2,
+                marginRight: 2,
               }}>
-              {respondingAgentAlias &&
-                <Stack
-                  spacing={1}
-                  direction="row">
-                  <SmallLabel
-                    color='text.secondary'
-                    sx = {{
-                      fontStyle: "italic",
+                {
+                  selectSpeakerResolver.resolvedAgent && selectSpeakerResolver.availableAgents && selectSpeakerResolver.prompt &&
+                  <div
+                    className="flex flex-col space-y-1">
+                    <TinyLabel>{selectSpeakerResolver.prompt}</TinyLabel>
+                    <div
+                      className='flex flex-row flex-wrap justify-center  '>
+                  {
+                    selectSpeakerResolver.availableAgents.map((agent, index) => (
+                      <button
+                        key={index}
+                        className='border-solid rounded bg-cyan-300 hover:bg-cyan-400 m-1 mx-5 px-3 text-xs text-slate-600 text-slack-200 font-apple-system'
+                        onClick={() => {
+                          selectSpeakerResolver.resolvedAgent!(agent);
+                          setSelectSpeakerResolver({});
+                        }}>
+                        {agent.name}
+                      </button>
+                    ))
+                  }
+                  <button
+                    className='border-solid rounded bg-orange-300 hover:bg-orange-400 m-1 mx-5 px-3 text-xs text-slate-600 font-apple-system'
+                    onClick={() => {
+                      selectSpeakerResolver.resolvedAgent!(undefined);
+                      setSelectSpeakerResolver({});
                     }}>
-                    {`${respondingAgentAlias} is typing`}
-                  </SmallLabel>
-                  <ThreeDotBouncingLoader/>
-                </Stack>}
-                {selectSpeakerMessage &&
-                <Stack
-                  spacing={1}
-                  direction="row">
-                  <SmallLabel
-                    color='text.secondary'
-                    sx = {{
-                      fontStyle: "italic",
-                    }}>
-                    {selectSpeakerMessage}
-                  </SmallLabel>
-                </Stack>}
+                    Cancel
+                  </button>
+                </div>
+            </div>
+          }
+
+              
                 <ChatInput
                     messageIsStreaming={false}
                     onClearChatHistory={onClearChatHistory}
                     onSend={async (message) => {
                       addNewMessageToConversationHandler(message);
                       var updatedConversation = [...currentConversation??[], message];
-                      await startGroupChatHandler(updatedConversation);
+                      await startGroupChatHandler(updatedConversation.filter(m => IsChatMessage(m)) as IChatMessageRecord[]);
                     }} />
               
             </Box>}

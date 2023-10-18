@@ -15,7 +15,7 @@ LLMProvider.registerProvider<IAzureGPTRecord>(
 
         return new AzureGPT(azureGPTRecord);
     },
-    (model, onConfigChange) => GPTConfig(model, (model) => onConfigChange(model)),
+    (model, onConfigChange) => GPTConfig(model, (model) => onConfigChange!(model)),
     new AzureGPT({
         maxTokens: 64,
         temperature: 0.7,

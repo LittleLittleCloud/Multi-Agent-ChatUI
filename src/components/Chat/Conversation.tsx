@@ -1,17 +1,21 @@
-import { IChatMessageRecord } from '@/message/type';
+import { IChatMessageRecord, IMessageRecord, IsChatMessage } from '@/message/type';
 import { Box, List } from '@mui/material';
 import React from 'react';
 import { ChatMessage } from './ChatMessage';
 import { IAgentRecord } from '@/agent/type';
+import { LogMessage, LogMessageType, LogMessageTypeString } from '@/message/LogMessage';
+import { MessageElement } from '@/message';
 
 interface ConversationProps {
-    conversation: IChatMessageRecord[];
+    conversation: IMessageRecord[];
     agents: IAgentRecord[];
     onResendMessage: (message: IChatMessageRecord, index: number) => void;
     onDeleteMessage: (message: IChatMessageRecord, index: number) => void;
 }
 
 export const Conversation: React.FC<ConversationProps> = ({ conversation, onDeleteMessage, onResendMessage, agents }) => {
+
+
     return (
         <List
             sx={{
@@ -21,17 +25,24 @@ export const Conversation: React.FC<ConversationProps> = ({ conversation, onDele
               <Box
                 key={index}
                 sx={{
-                  marginTop: 2,
+                  marginTop: 1,
                   marginRight: 5,
                 }}>
-                <ChatMessage
-                  key={index}
-                  message={message}
-                  agent={agents.find(agent => agent.name === message.from)}
-                  onDeleteMessage={(message) => onDeleteMessage(message, index)}
-                  onResendMessage={(message) => onResendMessage(message, index)}
-                  />
-                </Box>
+                  {
+                    message.type === LogMessageTypeString &&
+                    <MessageElement message={message} />
+                  }
+                  {
+                    IsChatMessage(message) &&
+                    <ChatMessage
+                      key={index}
+                      message={message as IChatMessageRecord}
+                      agent={agents.find(agent => agent.name === (message as IChatMessageRecord).from)}
+                      onDeleteMessage={(message) => onDeleteMessage(message, index)}
+                      onResendMessage={(message) => onResendMessage(message, index)}
+                      />
+                  }
+              </Box>
             ))}
         </List>
     );

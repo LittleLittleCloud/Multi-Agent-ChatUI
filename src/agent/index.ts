@@ -1,5 +1,5 @@
-import {IGPTAgentRecord, IZeroshotAgentMessage, initializeGPTAgent } from "./gptAgent";
-import { GPTAgentConfigPanel, MarkdownMessage } from "./gptAgentConfigPanel";
+import {IGPTAgentRecord, initializeGPTAgent } from "./gptAgent";
+import { GPTAgentConfigPanel } from "./gptAgentConfigPanel";
 import { AgentProvider } from "./agentProvider";
 
 // register gptAgent

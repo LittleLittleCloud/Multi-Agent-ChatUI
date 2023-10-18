@@ -11,7 +11,7 @@ LLMProvider.registerProvider<IOpenAIGPTRecord>(
 
         return new OpenAIGPT(rc);
     },
-    (model, onConfigChange) => ModelConfig(model, (model) => onConfigChange(model)),
+    (model, onConfigChange) => ModelConfig(model, (model) => onConfigChange!(model)),
     new OpenAIGPT({
         type: "openai.gpt",
         maxTokens: 64,

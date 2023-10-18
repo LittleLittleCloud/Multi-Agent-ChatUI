@@ -3,7 +3,7 @@ import { IChatMessageRecord } from "@/message/type";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { convertToOpenAIChatMessages } from "../utils";
 import { OpenAIClient, OpenAIKeyCredential } from "@azure/openai";
-import { IMarkdownMessage } from "@/message/MarkdownMessage";
+import { IMarkdownMessageRecord } from "@/message/MarkdownMessage";
 
 export interface IOpenAIModel extends IChatModelRecord
 {
@@ -87,6 +87,6 @@ export class OpenAIGPT implements IChatModel, IOpenAIGPTRecord{
         return {
             ...replyMessage,
             type: 'message.markdown',
-        } as IMarkdownMessage;
+        } as IMarkdownMessageRecord;
     }
 }

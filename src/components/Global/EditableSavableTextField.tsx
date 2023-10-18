@@ -15,6 +15,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { ReactMarkdown } from 'react-markdown/lib/react-markdown';
 import { ImageBlobStorage } from '@/utils/blobStorage';
 import { IAgent } from '@/types/agent';
+import { jsx } from '@emotion/react';
 
 export const EditableSavableTextField = (props: {name: string, value?: string, onChange: (valueS: string) => void}) => {
     const [value, setValue] = useState(props.value);
@@ -609,10 +610,11 @@ export const SmallLabel = styled(Label)(({theme}) => ({
     lineHeight: '1.5rem',
 }));
 
-export const TinyLabel = styled(Label)(({theme}) => ({
-    fontSize: '0.7em',
-    lineHeight: '1rem',
-}));
+export const TinyLabel = (props: {children?: string}) =>{
+    return (
+        <span {...props} className="text-slate-400 text-xs text-font-apple-system" >{props.children}</span>
+    )
+}
 
 export const SmallTextField = styled(TextField)<BaseTextFieldProps>(({theme}) => ({
     '& .MuiOutlinedInput-root': {

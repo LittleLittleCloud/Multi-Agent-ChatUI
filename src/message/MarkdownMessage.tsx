@@ -4,11 +4,13 @@ import { Stack, Divider, Box } from "@mui/material";
 import React from "react";
 import { IChatMessageRecord } from "./type";
 
+export type MarkdownMessageType = 'message.markdown';
+
 export interface IMarkdownMessageRecord extends IChatMessageRecord {
-    type: 'message.markdown',
+    type: MarkdownMessageType,
 }
 
-export const MarkdownMessage = (message: IMarkdownMessageRecord, onChange: (message: IMarkdownMessageRecord) => void) => {
+export const MarkdownMessage = (message: IMarkdownMessageRecord) => {
     const content = message.content;
     const [openContent, setOpenContent] = React.useState<'markdown' | 'plain text'>("markdown");
     return (

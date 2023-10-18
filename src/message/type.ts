@@ -7,9 +7,11 @@ export interface IFunctionCall
   arguments: string;
 }
 
-export interface IChatMessageRecord extends IRecord {
-  role: Role;
+export interface IMessageRecord extends IRecord {
   content?: string;
+}
+export interface IChatMessageRecord extends IMessageRecord {
+  role: Role;
   name?: string;
   functionCall?: IFunctionCall;
   from?: string; // agent name
@@ -22,4 +24,8 @@ export function IsUserMessage(message: IChatMessageRecord): boolean{
 
 export function IsFunctionCallMessage(message: IChatMessageRecord): boolean{
   return message.functionCall !== undefined;
+}
+
+export function IsChatMessage(message: IMessageRecord): boolean{
+  return (message as IChatMessageRecord).role !== undefined;
 }

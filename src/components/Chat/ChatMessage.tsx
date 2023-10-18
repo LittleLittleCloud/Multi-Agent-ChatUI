@@ -1,20 +1,15 @@
 import { IconEdit, IconRefresh } from '@tabler/icons-react';
 import { useTranslation } from 'next-i18next';
 import { FC, memo, useEffect, useRef, useState } from 'react';
-import rehypeMathjax from 'rehype-mathjax';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import { CodeBlock } from '../Markdown/CodeBlock';
-import { MemoizedReactMarkdown } from '../Markdown/MemoizedReactMarkdown';
-import { CopyButton } from './CopyButton';
 import { Avatar, Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import { SmallAvatar, SmallLabel, TinyAvatar, TinyLabel } from '../Global/EditableSavableTextField';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { IChatMessageRecord, IsUserMessage } from '@/message/type';
+import { IChatMessageRecord, IMessageRecord, IsUserMessage } from '@/message/type';
 import { IAgentRecord } from '@/agent/type';
 import { MessageProvider } from '@/message/messageProvider';
+import { MessageElement } from '@/message';
 
 interface Props {
   message: IChatMessageRecord;
@@ -32,24 +27,16 @@ export const ChatMessage: FC<Props> = memo(
     const isUser = IsUserMessage(message);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const copyOnClick = () => {
-      if (!navigator.clipboard) return;
+    // const copyOnClick = () => {
+    //   if (!navigator.clipboard) return;
 
-      navigator.clipboard.writeText(message.content.toString()).then(() => {
-        setMessageCopied(true);
-        setTimeout(() => {
-          setMessageCopied(false);
-        }, 2000);
-      });
-    };
-
-    const MessageElement = (props: { message: IChatMessageRecord, onchange: (agent: IChatMessageRecord) => void}) => {
-      if(!MessageProvider.hasProvider(props.message.type)){
-          return <SmallLabel>{props.message.content.toString()}</SmallLabel>
-      }
-
-      return MessageProvider.getConfigUIProvider(props.message.type)(props.message, props.onchange);
-  }
+    //   navigator.clipboard.writeText(message.content.toString()).then(() => {
+    //     setMessageCopied(true);
+    //     setTimeout(() => {
+    //       setMessageCopied(false);
+    //     }, 2000);
+    //   });
+    // };
 
     useEffect(() => {
       if (textareaRef.current) {
@@ -102,18 +89,12 @@ export const ChatMessage: FC<Props> = memo(
                   alignItems: 'center',
                 }}>
               {isUser ?
-                <TinyLabel
-                  sx={{
-                    color: 'text.secondary',
-                  }}>{t('You')}</TinyLabel> :
-                <TinyLabel
-                  sx={{
-                    color: 'text.secondary',
-                  }}>{message.from}</TinyLabel>
+                <TinyLabel>You</TinyLabel> :
+                <TinyLabel>{message.from}</TinyLabel>
               }
               {
                 message.timestamp &&
-                <TinyLabel color='text.secondary'>{new Date(message.timestamp).toLocaleString()}</TinyLabel>
+                <TinyLabel>{new Date(message.timestamp).toLocaleString()}</TinyLabel>
               }
                 <Stack
                   direction="row"
@@ -155,7 +136,7 @@ export const ChatMessage: FC<Props> = memo(
                 sx={{
                   overflow: 'scroll',
                 }}>
-                <MessageElement message={message} onchange={(message: IChatMessageRecord) => {}} />
+                <MessageElement message={message} />
               </Box>
               </Stack>
             </Box>

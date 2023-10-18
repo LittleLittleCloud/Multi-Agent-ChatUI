@@ -2,21 +2,21 @@ import { IRecord } from "@/types/storage";
 
 export class Provider<TModel extends IRecord, TProviderType>{
     private _providers: Record<string, TProviderType> = {};
-    private _configUIProviders: Record<string, (model: TModel, onConfigChange: (config: TModel) => void) => JSX.Element> = {};
+    private _configUIProviders: Record<string, (model: TModel, onConfigChange?: (config: TModel) => void) => JSX.Element> = {};
     private _defaultValues: Record<string, TModel> = {};
     private _availableModels: string[] = [];
 
     registerProvider<T extends TModel>(
         id: string,
         provider: TProviderType,
-        configUIProvider: (model: T, onConfigChange: (config: T) => void) => JSX.Element,
+        configUIProvider: (model: T, onConfigChange?: (config: T) => void) => JSX.Element,
         defaultConfig: TModel){
         if(!this._availableModels.includes(id)){
             this._availableModels.push(id);
         }
 
         this._providers[id] = provider;
-        this._configUIProviders[id] = (config: TModel, onConfigChange: (config: TModel) => void) => configUIProvider(config as T, onConfigChange as (config: T) => void);
+        this._configUIProviders[id] = (config: TModel, onConfigChange?: (config: TModel) => void) => configUIProvider(config as T, onConfigChange as (config: T) => void);
         this._defaultValues[id] = defaultConfig;
     }
 
@@ -28,7 +28,7 @@ export class Provider<TModel extends IRecord, TProviderType>{
         return this._defaultValues[type];
     }
 
-    getConfigUIProvider(type: string): (model: TModel, onConfigChange: (config: TModel) => void) => JSX.Element{
+    getConfigUIProvider(type: string): (model: TModel, onConfigChange?: (config: TModel) => void) => JSX.Element{
         if(!this.hasProvider(type)){
             throw new Error(`No provider for model ${type}`);
         }

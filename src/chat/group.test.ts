@@ -35,12 +35,12 @@ test('multi-agent response test', async () => {
         }
     );
 
-    var groupChat = new GroupChat(
-        "group",
-        llm,
-        [bob],
-        alice,
-    );
+    var groupChat = new GroupChat({
+        name: "group",
+        llm: llm,
+        admin: alice,
+        agents: [bob],
+    });
 
     groupChat.addInitialConversation("hello", alice);
     groupChat.addInitialConversation("hi", bob);

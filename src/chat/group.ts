@@ -1,31 +1,54 @@
 import { IAgent, IAgentRecord } from "@/agent/type";
 import { UserProxyAgent } from "@/agent/userProxyAgent";
-import { IGroup, IGroupRecord } from "@/chat/type";
-import { ILogMessageRecord, LogMessageTypeString } from "@/message/LogMessage";
+import { GroupType, GroupTypeString, IGroup, IGroupRecord, SelectSpeakerMode } from "@/chat/type";
+import { ILogMessageRecord, LogMessageLevel, LogMessageTypeString } from "@/message/LogMessage";
 import { IMarkdownMessageRecord } from "@/message/MarkdownMessage";
 import { IChatMessageRecord, IMessageRecord, IsUserMessage } from "@/message/type";
 import { IChatModel, IChatModelRecord } from "@/model/type";
+import { IRecord } from "@/types/storage";
 import { Logger } from "@/utils/logger";
 
+export type GroupChatParams = {
+    name: string,
+    llm: IChatModel,
+    agents: IAgent[],
+    admin: IAgent,
+    maxRound?: number,
+    selectSpeakerMode?: SelectSpeakerMode,
+    initialMessages?: IChatMessageRecord[],
+    messageHandler?: (message: IMessageRecord) => void,
+    reselectSpeakerHandler?: (available_agents: IAgent[], prompt?: string) => Promise<IAgent | undefined>,
+}
 export class GroupChat implements IGroup {
     name: string;
     llm: IChatModel;
     agents: IAgent[];
     admin: IAgent;
-    initial_conversation: IChatMessageRecord[];
     terminate_message_prefix: string = "[GROUP_TERMINATE]";
     clear_message_prefix: string = "[GROUP_CLEAR]";
     end_of_message_token = "<eof_msg>";
+    agentNames: string[];
+    conversation: IMessageRecord[];
+    llmModel?: IChatModelRecord | undefined;
+    logLevel?: LogMessageLevel | undefined;
+    maxRound: number;
+    selectSpeakerMode: SelectSpeakerMode;
+    initialMessages: IChatMessageRecord[];
+    type: GroupType;
     messageHandler?: (message: IMessageRecord) => void;
     reselectSpeakerHandler?: (available_agents: IAgent[], prompt?: string) => Promise<IAgent | undefined>;
 
-    constructor(
-        name: string,
-        llm: IChatModel,
-        agents: IAgent[],
-        admin: IAgent,
-        messageHandler?: (message: IMessageRecord) => void,
-        reselectSpeakerHandler?: (available_agents: IAgent[], prompt?: string) => Promise<IAgent | undefined>,
+    constructor({
+        name,
+        llm,
+        agents,
+        admin,
+        maxRound = 10,
+        selectSpeakerMode = 'auto',
+        initialMessages = [],
+        messageHandler,
+        reselectSpeakerHandler,
+    }: GroupChatParams
     ){
         this.name = name;
         this.llm = llm;
@@ -34,10 +57,16 @@ export class GroupChat implements IGroup {
             admin,
         ]
         this.admin = admin;
-        this.initial_conversation = [];
+        this.agentNames = agents.map((agent) => agent.name);
+        this.conversation = [];
+        this.type = GroupTypeString;
+        this.maxRound = maxRound;
+        this.selectSpeakerMode = selectSpeakerMode;
+        this.initialMessages = initialMessages;
         this.messageHandler = messageHandler;
         this.reselectSpeakerHandler = reselectSpeakerHandler;
     }
+
 
     addInitialConversation(message: string, from: IAgent){
         // check if from is in agents
@@ -45,7 +74,7 @@ export class GroupChat implements IGroup {
             throw new Error(`Agent ${from.name} is not in the group`);
         }
 
-        this.initial_conversation.push({
+        this.initialMessages.push({
             role: "user",
             content: message,
             from: from.name,
@@ -54,32 +83,48 @@ export class GroupChat implements IGroup {
 
     async callAsync(messages: IChatMessageRecord[], max_round?: number | undefined): Promise<IChatMessageRecord[]> {
         if (max_round === undefined){
-            max_round = 10;
+            max_round = this.maxRound;
         }
         this.Debug(`max round: ${max_round}`)
         for (var i = 0; i < max_round; i++){
             try{
                 this.Debug(`round left: ${max_round - i}`)
-                var nextSpeaker = await this.selectNextSpeakerAsync(messages) ?? this.admin;
-                this.Debug(`next speaker: ${nextSpeaker.name}`)
-                if (nextSpeaker instanceof UserProxyAgent){
-                    if (this.reselectSpeakerHandler){
-                        var available_agents = this.agents.filter((agent) => agent.name.toLowerCase() != nextSpeaker.name.toLowerCase());
-                        nextSpeaker = await this.reselectSpeakerHandler(available_agents, 'select next agent to speak, or click on cancel if you want to type a message') ?? this.admin;
-    
-                        if (nextSpeaker instanceof UserProxyAgent || nextSpeaker == undefined){
-                            this.Debug("cancel, exit group chat");
-                            break;
-                        }
-
-                        this.Debug(`next speaker: ${nextSpeaker.name}`)
+                if (this.selectSpeakerMode == 'manual'){
+                    if (this.reselectSpeakerHandler == undefined){
+                        throw new Error("reselectSpeakerHandler is undefined");
                     }
-                    else{
+
+                    var available_agents = this.agents.filter((agent) => agent.name.toLowerCase() != this.admin.name.toLowerCase());
+                    var nextSpeaker = await this.reselectSpeakerHandler(available_agents, 'select next agent to speak, or click on cancel if you want to type a message') ?? this.admin;
+    
+                    if (nextSpeaker instanceof UserProxyAgent || nextSpeaker == undefined){
+                        this.Debug("cancel, stop chatting and exit");
                         break;
                     }
                 }
+                else{
+                    var nextSpeaker = await this.selectNextSpeakerAsync(messages) ?? this.admin;
+                    this.Debug(`next speaker: ${nextSpeaker.name}`)
+                    if (nextSpeaker instanceof UserProxyAgent && this.selectSpeakerMode == 'semi-auto'){
+                        if (this.reselectSpeakerHandler){
+                            var available_agents = this.agents.filter((agent) => agent.name.toLowerCase() != nextSpeaker.name.toLowerCase());
+                            nextSpeaker = await this.reselectSpeakerHandler(available_agents, 'select next agent to speak, or click on cancel if you want to type a message') ?? this.admin;
+        
+                            if (nextSpeaker instanceof UserProxyAgent || nextSpeaker == undefined){
+                                this.Debug("cancel, stop chatting and exit");
+                                break;
+                            }
     
-                var conversation = await this.processConversationsForAgentAsync(nextSpeaker, this.initial_conversation, messages);
+                            this.Debug(`next speaker: ${nextSpeaker.name}`)
+                        }
+                        else{
+                            throw new Error("reselectSpeakerHandler is undefined");
+                        }
+                    }
+                }
+                
+    
+                var conversation = await this.processConversationsForAgentAsync(nextSpeaker, this.initialMessages, messages);
                 this.Debug(`${nextSpeaker.name} is responding a message`)
                 var nextMessage = await nextSpeaker.callAsync({
                     messages: conversation,
@@ -123,7 +168,7 @@ From admin:
 //your message//.`
         } as IChatMessageRecord;
 
-        var conversation = await this.processConversationsForRolePlayAsync(this.initial_conversation, chatHistory);
+        var conversation = await this.processConversationsForRolePlayAsync(this.initialMessages, chatHistory);
         conversation = [
             rolePlayMessage,
             ...conversation

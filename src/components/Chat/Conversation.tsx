@@ -3,7 +3,7 @@ import { Box, List } from '@mui/material';
 import React from 'react';
 import { ChatMessage } from './ChatMessage';
 import { IAgentRecord } from '@/agent/type';
-import { LogMessage, LogMessageType, LogMessageTypeString } from '@/message/LogMessage';
+import { ILogMessageRecord, LogLevelsToPresent, LogMessage, LogMessageLevel, LogMessageType, LogMessageTypeString } from '@/message/LogMessage';
 import { MessageElement } from '@/message';
 
 interface ConversationProps {
@@ -11,11 +11,11 @@ interface ConversationProps {
     agents: IAgentRecord[];
     onResendMessage: (message: IChatMessageRecord, index: number) => void;
     onDeleteMessage: (message: IChatMessageRecord, index: number) => void;
+    logLevel?: LogMessageLevel;
 }
 
-export const Conversation: React.FC<ConversationProps> = ({ conversation, onDeleteMessage, onResendMessage, agents }) => {
-
-
+export const Conversation: React.FC<ConversationProps> = ({ conversation, onDeleteMessage, onResendMessage, agents, logLevel }) => {
+    const presentLogLoevels = LogLevelsToPresent(logLevel ?? 'info');
     return (
         <List
             sx={{
@@ -30,6 +30,7 @@ export const Conversation: React.FC<ConversationProps> = ({ conversation, onDele
                 }}>
                   {
                     message.type === LogMessageTypeString &&
+                    presentLogLoevels.includes((message as ILogMessageRecord).level) &&
                     <MessageElement message={message} />
                   }
                   {

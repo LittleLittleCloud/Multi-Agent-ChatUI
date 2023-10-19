@@ -12,7 +12,7 @@ import { IOpenAIGPTRecord, OpenAIGPT } from "@/model/openai/GPT";
 
 var globalTabIndex = 0;
 
-export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChanged: (config: IGPTAgentRecord) => void) => {
+export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChanged?: (config: IGPTAgentRecord) => void) => {
     const [selectedLLMModelID, setSelectedLLMModelID] = React.useState(agent.llm?.type);
     const [llm, setLLM] = React.useState(agent.llm);
     const [embedding, setEmbedding] = React.useState(agent.embedding);
@@ -61,7 +61,9 @@ export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChange
             // check if llm is AzureGPT or OpenAIGPT
             if (newLLM instanceof AzureGPT || newLLM instanceof OpenAIGPT) {
                 setLLM(newLLM);
-                onAgentConfigChanged({...agent, llm: newLLM});
+                if (onAgentConfigChanged != undefined){
+                    onAgentConfigChanged({...agent, llm: newLLM});
+                }
             }
             else
             {
@@ -161,7 +163,11 @@ export const GPTAgentConfigPanel = (agent : IGPTAgentRecord, onAgentConfigChange
                             }
                         }}/>
                         {selectedLLMModelID && llm != undefined &&
-                            <LLMSettingPanel model={llm} onChange={(model) => onAgentConfigChanged({...agent, llm: model})}/>
+                            <LLMSettingPanel model={llm} onChange={(model) => {
+                                if (onAgentConfigChanged != undefined){
+                                    onAgentConfigChanged({...agent, llm: model});
+                                }
+                            }}/>
                         }
                     </SettingSection>
             </TabPanel>

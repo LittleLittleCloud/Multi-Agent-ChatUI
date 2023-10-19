@@ -49,15 +49,21 @@ const Home: React.FC<IStorageRecord> = () => {
       console.log('load from storage');
       storageDispatcher({ type: 'set', payload: JSON.parse(storage) });
     }
+    const theme = localStorage.getItem('theme') ?? 'dark';
+    handleThemeMode(theme as 'dark' | 'light');
     setIsInit(false);
     console.log('init');
   }, []);
 
-  // BASIC HANDLERS --------------------------------------------
+  const handleThemeMode = (mode: 'dark' | 'light') => {
+    setLightMode((prev) => {
+      const root = document.documentElement;
+      root.classList.remove(prev);
+      root.classList.add(mode);
+      localStorage.setItem('theme', mode);
 
-  const handleLightMode = (mode: 'dark' | 'light') => {
-    setLightMode(mode);
-    localStorage.setItem('theme', mode);
+      return mode;
+    });
   };
 
   const handleExportSettings = () => {
@@ -160,7 +166,7 @@ const Home: React.FC<IStorageRecord> = () => {
                   <Switch
                     color="default"
                     checked={lightMode === 'light'}
-                    onChange={() => handleLightMode(lightMode === 'light' ? 'dark' : 'light')} />
+                    onChange={() => handleThemeMode(lightMode === 'light' ? 'dark' : 'light')} />
                 }
                 label={
                   <SmallLabel>

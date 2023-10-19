@@ -25,7 +25,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CropFreeIcon from '@mui/icons-material/CropFree';
 import { DeleteConfirmationDialog } from '../Global/DeleteConfirmationDialog';
 import { GroupAction, GroupCmd, groupReducer } from '@/utils/app/groupReducer';
-import { IGroupRecord } from '@/types/group';
 import { Console, groupEnd } from 'console';
 import { StorageAction } from '@/utils/app/storageReducer';
 import { IAgentRecord, IAgent } from '@/agent/type';
@@ -38,51 +37,22 @@ import html2canvas from 'html2canvas';
 import { UserProxyAgent } from '@/agent/userProxyAgent';
 import { GPTAgent } from '@/agent/gptAgent';
 import { LLMProvider } from '@/model/llmprovider';
+import { IGroupRecord } from '@/chat/type';
+import { GroupConfigModal } from '@/chat/groupConfigModal';
+import { ILogMessageRecord, LogMessageTypeString } from '@/message/LogMessage';
 
-const CreateOrEditGroupDialog: FC<{open: boolean, group?: IGroupRecord, agents: IAgentRecord[], onSaved: (group: IGroupRecord) => void, onCancel: () => void}> = ({open, group, agents, onSaved, onCancel}) => {
-  const [groupName, setGroupName] = useState(group?.name);
-  const [selectAgents, setSelectAgents] = useState(group?.agents ?? []); // [agentId]
-  const [savable, setSavable] = useState<boolean>(false); // [agentId]
-
-  useEffect(() => {
-    setGroupName(group?.name);
-    setSelectAgents(group?.agents ?? []);
-  }, [group]);
-
-  const onSavedHandler = () => {
-    if(group){
-      onSaved({...group, name: groupName!, agents: selectAgents!});
-    }
-    else{
-      onSaved({name: groupName!, agents: selectAgents!, type: 'group', conversation: []} as IGroupRecord);
-    }
-  };
-
-  useEffect(() => {
-    setSavable(groupName != undefined && groupName.length > 0 && selectAgents.length > 0);
-  }, [groupName, selectAgents]);
-
-  return (
-    <Dialog open={open} onClose={onCancel}>
-      {group && <DialogTitle>{`Edit ${group.name}`}</DialogTitle>}
-      {!group && <DialogTitle>Create a new Group</DialogTitle>}
-      <DialogContent>
-        <Stack
-          sx={{ mt:2 }}
-          spacing={2}
-          direction="column">
-          <SmallTextField label="Group Name" value={groupName} onChange={(e) => setGroupName(e.target.value)} />
-          <SmallMultipleSelectField name="Agents" value={selectAgents} onChange={setSelectAgents} options={agents.map(a => a.name)} />
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>Cancel</Button>
-        <Button disabled = {!savable} onClick={onSavedHandler}>Save</Button>
-      </DialogActions>
-    </Dialog>);
-};
-
-const GroupPanel: FC<{groups: IGroupRecord[], agents: IAgentRecord[], onGroupSelected: (group?: IGroupRecord) => void, storageDispatcher: Dispatch<StorageAction>}> = ({groups, agents, onGroupSelected, storageDispatcher}) => {
+const GroupPanel: FC<{
+  groups: IGroupRecord[],
+  agents: IAgentRecord[],
+  onGroupSelected: (group?: IGroupRecord) => void,
+  storageDispatcher: Dispatch<StorageAction>,
+  onUpdateGroup: (group: IGroupRecord, originalGroup?: IGroupRecord) => void,
+}> = ({
+  groups,
+  agents,
+  onGroupSelected,
+  storageDispatcher,
+  onUpdateGroup}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [groupToDelete, setGroupToDelete] = useState<IGroupRecord | null>(null);
   const [groupToEdit, setGroupToEdit] = useState<IGroupRecord>();
@@ -125,7 +95,8 @@ const GroupPanel: FC<{groups: IGroupRecord[], agents: IAgentRecord[], onGroupSel
   const onEditGroupHandler = (group: IGroupRecord) => {
     handleClose();
     setOpenUpdateGroupDialog(false);
-    storageDispatcher({type: 'updateGroup', payload: group, original: groupToEdit!});
+    onUpdateGroup(group, groupToEdit);
+    // storageDispatcher({type: 'updateGroup', payload: group, original: groupToEdit!});
 
     if(selectedGroup?.name == group.name){
       handleGroupSelected(group);
@@ -147,7 +118,7 @@ const GroupPanel: FC<{groups: IGroupRecord[], agents: IAgentRecord[], onGroupSel
       message="Are you sure to delete this group?"
       onConfirm={onConfirmDeleteGroup}
       onCancel={onCancelDeleteGroup} />
-    <CreateOrEditGroupDialog
+    <GroupConfigModal
       open={openUpdateGroupDialog && groupToEdit != undefined}
       group={groupToEdit}
       agents={agents}
@@ -184,8 +155,8 @@ const GroupPanel: FC<{groups: IGroupRecord[], agents: IAgentRecord[], onGroupSel
               <AvatarGroup
                 spacing="small"
                 max={0}
-                total = {group.agents.length}>
-                {group.agents.map((agentId, index) => (
+                total = {group.agentNames.length}>
+                {group.agentNames.map((agentId, index) => (
                   <TinyAvatar key={index} avatarKey={agents[index].avatar} />
                 ))}
                 </AvatarGroup>
@@ -229,8 +200,6 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     // const [availableGroups, setAvailableGroups] = useState<IGroup[]>(groups);
     const [openCreateGroupDialog, setOpenCreateGroupDialog] = useState<boolean>(false);
-    const [respondingAgentAlias, setRespondingAgentAlias] = useState<string|undefined>(undefined);
-    const [selectSpeakerMessage, setSelectSpeakerMessage] = useState<string|undefined>(undefined);
     const [conversationOverflowY, setConversationOverflowY] = useState<"visible" | "scroll">("scroll");
     const chatRef = useRef(null);
     const [selectSpeakerResolver, setSelectSpeakerResolver] = useState<{availableAgents?: IAgent[], prompt?: string, resolvedAgent?: (agent?: IAgent) => void}>({});
@@ -239,7 +208,20 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
     }, [currentGroup]);
 
     const addNewMessageToConversationHandler = async (message: IMessageRecord) => {
-      setCurrentConversation(prev => [...prev!, message]);
+      setCurrentConversation(prev => [...prev ?? [], message]);
+    }
+
+    const Debug = (message: string, details?: any) => {
+      addNewMessageToConversationHandler({
+        type: LogMessageTypeString,
+        level: 'debug',
+        content: message,
+        details: details,
+      } as ILogMessageRecord);
+      Logger.debug(message);
+      if (details) {
+        Logger.debug(details);
+      }
     }
 
     const reselectSpeakerHandler = async (agents: IAgent[], prompt?: string) => {
@@ -270,7 +252,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
         return;
       }
       Logger.log('start group chatting');
-      var currentAgentRecords = agentRecords.filter(agent => currentGroup?.agents.includes(agent.name));
+      var currentAgentRecords = agentRecords.filter(agent => currentGroup?.agentNames.includes(agent.name));
       var currentAgents = currentAgentRecords.map(agent => AgentProvider.getProvider(agent)(agent));
       var firstGPTAgents = currentAgents.filter(agent => agent instanceof GPTAgent)[0] as GPTAgent | undefined;
       var llmToUse = firstGPTAgents?.llm;
@@ -279,7 +261,17 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
       }
       var llmModel = LLMProvider.getProvider(llmToUse)(llmToUse);
       var userAgent = new UserProxyAgent("You");
-      var chat = new GroupChat(currentGroup.name, llmModel, currentAgents, userAgent, addNewMessageToConversationHandler, reselectSpeakerHandler);
+      var chat = new GroupChat({
+        name: currentGroup.name,
+        agents: currentAgents,
+        llm: llmModel,
+        admin: userAgent,
+        messageHandler: addNewMessageToConversationHandler,
+        reselectSpeakerHandler: reselectSpeakerHandler,
+        maxRound: currentGroup.maxRound ?? 10,
+        selectSpeakerMode: currentGroup.selectSpeakerMode ?? 'semi-auto',
+        initialMessages: currentGroup.initialMessages ?? [],
+      });
       chat.addInitialConversation("Hey, welcome to the group chat", userAgent);
       for(let agent of currentAgents){
         chat.addInitialConversation("Hey", agent)
@@ -294,10 +286,16 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
       }
     }
 
-    const onHandleCreateGroup = (group: IGroupRecord) => {
+    const onHandleCreateGroup = (group: IGroupRecord, originalGroup?: IGroupRecord ) => {
       // first check if the group already exists
       try{
-        storageDispatcher({type: 'addGroup', payload: group});
+        Debug(`add or update group ${group.name}`);
+        if(originalGroup != undefined){
+          storageDispatcher({type: 'updateGroup', payload: group, original: originalGroup});
+        }
+        else{
+          storageDispatcher({type: 'addGroup', payload: group});
+        }
       }
       catch(e){
         alert(e);
@@ -314,7 +312,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
 
         return;
       }
-      group.agents = group.agents.filter(agent => agentRecords.find(a => a.name === agent));
+      group.agentNames = group.agentNames.filter(agent => agentRecords.find(a => a.name === agent));
       setCurrentGroup(group);
       setCurrentConversation(group.conversation);
     };
@@ -379,11 +377,11 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
                   }}>
                   <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Create a group</Typography>
                 </Button>
-                <CreateOrEditGroupDialog
+                <GroupConfigModal
                   open={openCreateGroupDialog}
                   agents={agentRecords}
                   onCancel={() => setOpenCreateGroupDialog(false)}
-                  onSaved={onHandleCreateGroup} />
+                  onSaved={onHandleCreateGroup}/>
                 </>
                 }
             </CentralBox>
@@ -397,7 +395,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
           width: "100%",
           backgroundColor: "background.default",
         }}>
-        <CreateOrEditGroupDialog
+        <GroupConfigModal
           open={openCreateGroupDialog}
           agents={agentRecords}
           onCancel={() => setOpenCreateGroupDialog(false)}
@@ -421,7 +419,8 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
                 groups={groupRecords}
                 agents={agentRecords}
                 onGroupSelected={onHandleSelectGroup}
-                storageDispatcher={storageDispatcher}/>
+                storageDispatcher={storageDispatcher}
+                onUpdateGroup={onHandleCreateGroup}/>
             </Box>
             <CentralBox>
               <Button onClick={() => setOpenCreateGroupDialog(true)}>Create Group</Button>
@@ -448,6 +447,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
                 <Conversation
                   conversation={currentConversation}
                   agents={agentRecords}
+                  logLevel={currentGroup?.logLevel}
                   onResendMessage={onResendMessage}
                   onDeleteMessage={onDeleteMessage} />
                 
@@ -517,7 +517,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
               
             </Box>}
 
-          {currentGroup && currentGroup.agents.length == 0 && 
+          {currentGroup && currentGroup.agentNames.length == 0 && 
           <CentralBox
             sx={{
               width: "100%",

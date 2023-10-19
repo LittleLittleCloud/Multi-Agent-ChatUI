@@ -600,19 +600,21 @@ export const Label = styled(Typography)(({theme}) => ({
     textTransform: 'none',
 }));
 
-export const LargeLabel = styled(Label)(({theme}) => ({
-    fontSize: '1.2rem',
-    lineHeight: '2rem',
-}));
-
-export const SmallLabel = styled(Label)(({theme}) => ({
-    fontSize: '0.8rem',
-    lineHeight: '1.5rem',
-}));
-
-export const TinyLabel = (props: {children?: string}) =>{
+export const LargeLabel = (props: {children?: string} & any) =>{
     return (
-        <span {...props} className="text-slate-400 text-xs text-font-apple-system" >{props.children}</span>
+        <span {...props} className="text-slate-900 dark:text-slate-100 text-xl text-font-apple-system" >{props.children}</span>
+    )
+}
+
+export const SmallLabel = (props: {children?: string} & any) =>{
+    return (
+        <span {...props} className="text-slate-900 dark:text-slate-100 text-sm text-font-apple-system" >{props.children}</span>
+    )
+}
+
+export const TinyLabel = (props: {children?: string} & any) =>{
+    return (
+        <span {...props} className="text-slate-600 dark:text-slate-200  text-xs text-font-apple-system" >{props.children}</span>
     )
 }
 

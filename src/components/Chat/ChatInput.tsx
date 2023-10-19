@@ -280,7 +280,7 @@ export const ChatInput: FC<Props> = ({
               sx = {{
                 color: 'text.secondary',
               }}>
-              {t('Drop to upload')}
+              {'Drop to upload'}
             </TinyLabel>
           }
           {

@@ -3,7 +3,7 @@ import { IChatMessageRecord } from "@/message/type";
 import { Logger } from "@/utils/logger";
 import { AzureGPT, IAzureGPTRecord } from "@/model/azure/GPT";
 import { GPTAgent, IGPTAgentRecord } from "./gptAgent";
-import { FunctionDefinition } from "@azure/openai";
+import { AzureKeyCredential, FunctionDefinition, OpenAIClient } from "@azure/openai";
 import { LLMProvider } from "@/model/llmprovider";
 
 test('gpt agent callAsync test', async () => {

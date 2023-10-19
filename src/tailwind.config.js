@@ -6,10 +6,14 @@ module.exports = {
     './components/**/*.{js,ts,jsx,tsx}',
     './message/**/*.{js,ts,jsx,tsx}',
     './agent/**/*.{js,ts,jsx,tsx}',
+    './chat/**/*.{js,ts,jsx,tsx}',
   ],
   darkMode: 'class',
   theme: {
     extend: {},
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: [
+    require('@tailwindcss/typography'),
+    require('@tailwindcss/forms')
+  ],
 };

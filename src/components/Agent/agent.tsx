@@ -195,17 +195,6 @@ export const AgentPage: FC<{availableAgents: IAgentRecord[], storageDispatcher: 
                         onCloseSettingMenu();
                     }}
                 />
-                <Menu
-                MenuListProps={{
-                    'aria-labelledby': 'hover-button',
-                }}
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                >
-                    <MenuItem onClick={(e) => onAgentCloneHandler(availableAgents[onOpenSettingMenu])}>Clone</MenuItem>
-                    <MenuItem onClick={(e) => setAgentToDelete(availableAgents[onOpenSettingMenu])}>Delete</MenuItem>
-                </Menu>
             <Box
                 sx={{
                     width: "20%",
@@ -214,7 +203,7 @@ export const AgentPage: FC<{availableAgents: IAgentRecord[], storageDispatcher: 
             <div
               className="flex h-full flex-col justify-between items-center">
             <div
-                className='overflow-y-auto grow'>
+                className='overflow-y-auto grow w-full'>
                 {availableAgents.map((agent, index) => 
                     <AgentListItem
                         key={index}

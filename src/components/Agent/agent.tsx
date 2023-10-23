@@ -9,7 +9,7 @@ import {
     useState,
   } from 'react';
 
-import { Box, Container, List, ListItem, Stack, Typography, Avatar, Button, ListItemButton, ListItemIcon, ListItemText, Divider, TextField, Tab, Tabs, DialogTitle, Dialog, DialogActions, DialogContent, DialogContentText, ListItemAvatar, IconButton, Menu, MenuItem } from '@mui/material';
+import { Box, Container, List, ListItem, Stack, Typography, Avatar, Button, ListItemButton, ListItemIcon, ListItemText, Divider, TextField, Tab, Tabs, DialogTitle, Dialog, DialogActions, DialogContent, DialogContentText, ListItemAvatar, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
 import { CentralBox, EditableSavableTextField, EditableSelectField, LargeAvatar, SelectableListItem, SettingSection, SmallAvatar, SmallLabel, SmallSelectField, SmallSelectSetting, SmallTextField, SmallTextSetting, TinyAvatar } from '../Global/EditableSavableTextField';
 import { TabContext, TabPanel } from '@mui/lab';
 import { ReactElement } from 'react-markdown/lib/react-markdown';
@@ -19,6 +19,8 @@ import { StorageAction } from '@/utils/app/storageReducer';
 import { ImageBlobStorage } from '@/utils/blobStorage';
 import { AgentProvider } from '@/agent/agentProvider';
 import { IAgentRecord } from '@/agent/type';
+
+import { AgentListItem } from './agentListItem';
 
 const CreateAgentDialog = (props: {open: boolean, onClose: () => void, storageDispatcher: Dispatch<StorageAction>}) => {
     const [alias, setAlias] = useState("");
@@ -216,49 +218,14 @@ export const AgentPage: FC<{availableAgents: IAgentRecord[], storageDispatcher: 
                 }}>
             <List>
                 {availableAgents.map((agent, index) => 
-                    <SelectableListItem
-                        selected={selectedAgent?.name == agent.name}
+                    <AgentListItem
                         key={index}
-                        onClick={() => setSelectedAgent(availableAgents[index])}>
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                            sx={{
-                                width: "100%",
-                            }}>
-                            <Box
-                                sx={{
-                                    width: "40%",
-                                    display: "flex",
-                                }}>
-                                <SmallAvatar
-                                    avatarKey={agent.avatar} />
-                            </Box>
-                            <Box
-                                sx={{
-                                    width: "50%",
-                                    display: "flex",
-                                    alignItems: "center",
-                                }}>
-                                <SmallLabel>{agent.name}</SmallLabel>
-                            </Box>
-                            <CentralBox
-                                sx={{
-                                width: '10%'
-                                }}>
-                                <IconButton
-                                    onClick={(e) =>
-                                    {
-                                        setOpenSettingMenu(index);
-                                        setAnchorEl(e.currentTarget);
-                                        e.stopPropagation();
-                                    }}
-                                    className='hover-button' >
-                                    <MoreVertIcon />
-                                </IconButton>
-                            </CentralBox>
-                        </Stack>
-                    </SelectableListItem>
+                        agent={agent}
+                        selected={selectedAgent?.name == agent.name}
+                        onClick={() => setSelectedAgent(agent)}
+                        onDeleted={(agent) => setAgentToDelete(agent)}
+                        onCloned={(agent) => onAgentCloneHandler(agent)}
+                        />
                 )}
             </List>
             </Box>

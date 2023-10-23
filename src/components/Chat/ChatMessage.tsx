@@ -68,7 +68,6 @@ export const ChatMessage: FC<Props> = memo(
                 }
               },
             }}>
-            {!isUser && <TinyAvatar avatarKey={agent?.avatar!}/>}
             <Box
               sx={{
                 backgroundColor: 'background.secondary',
@@ -84,10 +83,11 @@ export const ChatMessage: FC<Props> = memo(
                 }}>
               <Stack
                 direction="row"
-                spacing={2}
+                spacing={1}
                 sx={{
                   alignItems: 'center',
                 }}>
+              {!isUser && <TinyAvatar avatarKey={agent?.avatar!}/>}
               {isUser ?
                 <TinyLabel>You</TinyLabel> :
                 <TinyLabel>{message.from}</TinyLabel>

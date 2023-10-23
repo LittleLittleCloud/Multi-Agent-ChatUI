@@ -32,17 +32,13 @@ export const MarkdownMessage = (message: IMarkdownMessageRecord) => {
                 spacing={1}>
                 {
                     <TinyClickableLabel
-                    onClick={() => setOpenContent('markdown')}
-                    sx = {{
-                        color: openContent == 'markdown' ? 'primary.main' : 'text.secondary',
-                    }}>content</TinyClickableLabel>
+                        onClick={() => setOpenContent('markdown')}
+                    >content</TinyClickableLabel>
                 }
                 <Divider orientation="vertical" flexItem />
                 <TinyClickableLabel
                     onClick={() => setOpenContent('plain text')}
-                    sx = {{
-                        color: openContent == 'plain text' ? 'primary.main' : 'text.secondary',
-                    }}>plain text</TinyClickableLabel>
+                    >plain text</TinyClickableLabel>
             </Stack>
         </Stack>
     )

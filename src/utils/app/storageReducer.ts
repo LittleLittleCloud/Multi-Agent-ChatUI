@@ -1,6 +1,6 @@
 import { IAgentRecord } from "@/agent/type";
+import { IGroupRecord } from "@/chat/type";
 import { IChatMessageRecord } from "@/message/type";
-import { IGroupRecord } from "@/types/group";
 import { IStorageRecord } from "@/types/storage";
 
 export type StorageCmd = "set" | "get"

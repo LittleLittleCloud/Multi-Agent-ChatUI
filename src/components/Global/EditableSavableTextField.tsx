@@ -16,6 +16,7 @@ import { ReactMarkdown } from 'react-markdown/lib/react-markdown';
 import { ImageBlobStorage } from '@/utils/blobStorage';
 import { IAgent } from '@/types/agent';
 import { jsx } from '@emotion/react';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 export const EditableSavableTextField = (props: {name: string, value?: string, onChange: (valueS: string) => void}) => {
     const [value, setValue] = useState(props.value);
@@ -591,10 +592,34 @@ export const LargeAvatar = styled(SmallAvatar)<AvatarProps & {avatarKey: string}
     height: '6rem',
 }));
 
-export const TinyAvatar = styled(SmallAvatar)<AvatarProps & {avatarKey: string}>(({theme}) => ({
-    width: '2rem',
-    height: '2rem',
-}));
+
+export const TinyAvatar = (props: {src: string} & any) => {
+    const [src, setSrc] = useState<string | undefined>(undefined);
+    useEffect(() => {
+        ImageBlobStorage.then(async (imageStorage) => {
+            if(props.src){
+                var blob = await imageStorage.getBlob(props.src);
+                if(blob){
+                    setSrc(URL.createObjectURL(blob));
+                }
+            }
+        });
+        return () => {
+            if(src){
+                URL.revokeObjectURL(src!);
+            }
+        }
+        }, [props.src]);
+
+    return (
+    <Avatar
+        {...props}
+        src={src}
+        sx={{
+            width: '1.5rem',
+            height: '1.5rem',
+        }}/>)
+}
 
 export const Label = styled(Typography)(({theme}) => ({
     textTransform: 'none',
@@ -603,6 +628,12 @@ export const Label = styled(Typography)(({theme}) => ({
 export const LargeLabel = (props: {children?: string} & any) =>{
     return (
         <span {...props} className="text-slate-900 dark:text-slate-100 text-xl text-font-apple-system" >{props.children}</span>
+    )
+}
+
+export const MediumLabel = (props: {children?: string} & any) =>{
+    return (
+        <span {...props} className="text-slate-900 dark:text-slate-100 text-lg text-font-apple-system" >{props.children}</span>
     )
 }
 
@@ -637,26 +668,31 @@ export const CentralBox = styled(Box)(({theme}) => ({
     alignItems: "center",
 }));
 
-export const SmallClickableLabel = styled(SmallLabel)(({theme}) => ({
-    cursor: 'pointer',
-    '&:hover': {
-        backgroundColor: theme.palette.action.hover,
-    }
-}));
+export const SmallClickableLabel = (props: {children?: string} & any) => {
+    return (
+        <span
+            {...props}
+            className="cursor-pointer text-slate-900 dark:text-slate-100 text-sm text-font-apple-system hover:text-slate-900 dark:hover:text-slate-100">
+            {props.children}
+        </span>
+    )
+}
 
-export const LargeClickableLabel = styled(LargeLabel)(({theme}) => ({
-    cursor: 'pointer',
-    '&:hover': {
-        backgroundColor: theme.palette.action.hover,
-    }
-}));
+export const LargeClickableLabel = (props: {children?: string} & any) =>{
+    return (
+        <span {...props} className="cursor-pointer text-slate-900 dark:text-slate-100 text-xl text-font-apple-system hover:text-slate-900 dark:hover:text-slate-100" >{props.children}</span>
+    )
+}
 
-export const TinyClickableLabel = styled(TinyLabel)(({theme}) => ({
-    cursor: 'pointer',
-    '&:hover': {
-        backgroundColor: theme.palette.action.hover,
-    }
-}));
+export const TinyClickableLabel = (props: {children?: string} & any) =>{
+    return (
+        <span
+            {...props}
+            className="cursor-pointer text-slate-500 dark:text-slate-300 text-xs text-font-apple-system hover:text-slate-900 dark:hover:text-slate-100">
+            {props.children}
+        </span>
+    )
+}
 
 export const SmallTextButton = styled(Button)(({theme}) => ({
     ...theme.typography.button,

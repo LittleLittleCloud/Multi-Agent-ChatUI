@@ -106,11 +106,7 @@ const GroupPanel: FC<{
   }
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-      }}>
+    <div>
     <DeleteConfirmationDialog
       open={groupToDelete != null}
       message="Are you sure to delete this group?"
@@ -122,7 +118,7 @@ const GroupPanel: FC<{
       agents={agents}
       onCancel={() => setOpenUpdateGroupDialog(false)}
       onSaved={onEditGroupHandler} />
-    <List>
+    <div>
       {groups.map((group, index) => (
         <GroupListItem
           key={index}
@@ -135,8 +131,8 @@ const GroupPanel: FC<{
           onCloned={onCloneGroup}
           />
       ))}
-    </List>
-    </Box>
+    </div>
+    </div>
   )
 }
 
@@ -366,21 +362,17 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
               borderRight: "1px solid",
               borderColor: "divider",
             }}>
-            <Box
-              sx={{
-                flexGrow: 1,
-              }}>
-              <GroupPanel
-                groups={groupRecords}
-                agents={agentRecords}
-                onGroupSelected={onHandleSelectGroup}
-                storageDispatcher={storageDispatcher}
-                onUpdateGroup={onHandleCreateGroup}
-                onCloneGroup={onHandleCreateGroup}/>
-            </Box>
-            <CentralBox>
+              <div
+                className='overflow-y-auto grow'>
+                <GroupPanel
+                  groups={groupRecords}
+                  agents={agentRecords}
+                  onGroupSelected={onHandleSelectGroup}
+                  storageDispatcher={storageDispatcher}
+                  onUpdateGroup={onHandleCreateGroup}
+                  onCloneGroup={onHandleCreateGroup}/>
+              </div>
               <Button onClick={() => setOpenCreateGroupDialog(true)}>Create Group</Button>
-            </CentralBox>
           </Grid>}
         <Grid
           item

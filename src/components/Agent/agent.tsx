@@ -211,12 +211,10 @@ export const AgentPage: FC<{availableAgents: IAgentRecord[], storageDispatcher: 
                     width: "20%",
                     height: "100%",
                 }}>
-            <Box
-                sx={{
-                    width: "100%",
-                    height: "90%",
-                }}>
-            <List>
+            <div
+              className="flex h-full flex-col justify-between items-center">
+            <div
+                className='overflow-y-auto grow'>
                 {availableAgents.map((agent, index) => 
                     <AgentListItem
                         key={index}
@@ -227,23 +225,12 @@ export const AgentPage: FC<{availableAgents: IAgentRecord[], storageDispatcher: 
                         onCloned={(agent) => onAgentCloneHandler(agent)}
                         />
                 )}
-            </List>
-            </Box>
-            <CentralBox
-                sx={{
-                    width: "100%",
-                    height: "10%",
-                }}
-            >
+            </div>
             <Button
-                sx={{
-                    width: "100%",
-                    height: "100%",
-                }}
                 onClick={() => setOpenCreateAgentDialog(true)}>
                 Add an agent
             </Button>
-            </CentralBox>
+            </div>
             </Box>
             
             <Divider orientation="vertical" flexItem />

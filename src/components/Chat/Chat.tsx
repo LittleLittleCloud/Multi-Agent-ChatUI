@@ -383,7 +383,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
             maxHeight: "100%",
             display: "flex",
           }}>
-          {currentConversation &&
+          {currentConversation && currentGroup.agentNames.length > 0 &&
             <Box
               ref={chatRef}
               sx={{
@@ -415,7 +415,7 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
                 </Tooltip>
               </Fab> */}
           
-          {currentGroup &&
+          {currentGroup && currentGroup.agentNames.length > 0 &&
             <Box
               sx={{
                 marginLeft: 2,
@@ -452,8 +452,6 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
                 </div>
             </div>
           }
-
-              
                 <ChatInput
                     messageIsStreaming={false}
                     onClearChatHistory={onClearChatHistory}

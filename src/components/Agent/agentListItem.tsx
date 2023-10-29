@@ -19,7 +19,7 @@ export const AgentListItem: FC<AgentListItemProps> = (props) => {
 
     const Element = (
         <div
-            className="flex justify-between cursor-pointer"
+            className="flex w-full justify-between cursor-pointer"
             onClick={() => props.onClick?.(agent)}>
             <div>
                 <SmallLabel>{agent.name}</SmallLabel>

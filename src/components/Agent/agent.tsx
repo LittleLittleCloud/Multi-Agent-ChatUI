@@ -127,8 +127,9 @@ export const AgentPage: FC<{availableAgents: IAgentRecord[], storageDispatcher: 
 
     const onSelectedAgentChangedHandler = (agent: IAgentRecord) => {
         setSelectedAgent((prop) => {
+            console.log(prop);
             if(prop?.name == agent.name){
-                return prop;
+                return agent;
             }
 
             setAgentName(agent.name);
@@ -177,6 +178,7 @@ export const AgentPage: FC<{availableAgents: IAgentRecord[], storageDispatcher: 
 
     const onAgentUpdatedHandler = (agent: IAgentRecord, original?: IAgentRecord) => {
         storageDispatcher({type: 'updateAgent', payload: agent, original: original ?? selectedAgent});
+        console.log(agent);
         onSelectedAgentChangedHandler(agent);
     };
 

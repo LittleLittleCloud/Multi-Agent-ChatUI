@@ -148,6 +148,8 @@ export class GroupChat implements IGroup {
                 else{
                     this.Error(`Error in round ${i}`, new Error(message));
                 }
+
+                break;
             }
         }
 
@@ -203,7 +205,7 @@ From admin:
             this.messageHandler({
                 type: LogMessageTypeString,
                 level: 'error',
-                details: error.message + "\n" + error.stack,
+                detail: error.message + "\n" + error.stack,
                 content: message,
             } as ILogMessageRecord);
         }
@@ -215,7 +217,7 @@ From admin:
             this.messageHandler({
                 type: LogMessageTypeString,
                 level: 'debug',
-                details: details,
+                detail: details,
                 content: message,
             } as ILogMessageRecord);
         }
@@ -227,7 +229,7 @@ From admin:
             this.messageHandler({
                 type: LogMessageTypeString,
                 level: 'verbose',
-                details: details,
+                detail: details,
                 content: message,
             } as ILogMessageRecord);
         }

@@ -383,7 +383,8 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
             maxHeight: "100%",
             display: "flex",
           }}>
-          {currentConversation && currentGroup.agentNames.length > 0 &&
+          {
+            currentConversation && currentGroup && currentGroup.agentNames.length > 0 &&
             <Box
               ref={chatRef}
               sx={{
@@ -399,7 +400,8 @@ export const Chat: FC<{groupRecords: IGroupRecord[], agentRecords: IAgentRecord[
                   onResendMessage={onResendMessage}
                   onDeleteMessage={onDeleteMessage} />
                 
-            </Box>}
+            </Box>
+          }
               {/* <Fab
                 sx={{
                   position: "absolute",

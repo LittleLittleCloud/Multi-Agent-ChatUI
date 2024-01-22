@@ -645,7 +645,7 @@ export const SmallLabel = (props: {children?: string} & any) =>{
 
 export const TinyLabel = (props: {children?: string} & any) =>{
     return (
-        <span {...props} className="text-slate-600 dark:text-slate-200  text-xs text-font-apple-system" >{props.children}</span>
+        <span {...props} className="whitespace-pre text-slate-600 dark:text-slate-200  text-xs text-font-apple-system" >{props.children}</span>
     )
 }
 
